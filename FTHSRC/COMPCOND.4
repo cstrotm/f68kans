@@ -1,0 +1,30 @@
+
+\ MARKER [IF][ELSE][THEN]
+\ : WORD ." word:" WORD DUP COUNT TYPE CR ;
+
+
+: [ELSE] ( -- )
+	1 BEGIN									\ LEVEL
+	  BEGIN  
+	    blankbits ( **) WORD COUNT  DUP 
+	  WHILE 								\ LEVEL ADR LEN
+	    2DUP S" [IF]" COMPARE 0= IF			\ LEVEL ADR LEN
+	      2DROP 1+							\ LEVEL'
+	    ELSE								\ LEVEL ADR LEN
+	      2DUP S" [ELSE]" COMPARE 0= IF		\ LEVEL ADR LEN
+	        2DROP 1- DUP IF 1+ THEN			\ LEVEL'
+	      ELSE								\ LEVEL ADR LEN
+	        S" [THEN]" COMPARE 0= IF		\ LEVEL
+	          1-							\ LEVEL'
+	        THEN
+	      THEN
+            THEN ?DUP 0=  IF EXIT THEN		\ LEVEL'
+	  REPEAT 2DROP							\ LEVEL
+	REFILL 0= UNTIL 						\ LEVEL
+	DROP ; IMMEDIATE 
+
+: [IF] ( flag -- )
+	0= IF POSTPONE [ELSE] THEN ; IMMEDIATE
+
+: [THEN]  ( -- )  ; IMMEDIATE
+

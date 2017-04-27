@@ -1,0 +1,19 @@
+
+\ "An exercise in mathematical algorithm design"
+
+: un* ( u n -- d ) 
+   DUP 0< IF  NEGATE UM* DNEGATE  ELSE  UM*  THEN ;
+
+: dn* ( d n -- t )
+   ROT OVER un* 2SWAP M* ROT S>D D+ ;
+
+: tn/ ( t +n -- d )
+   >R ROT  
+   0       R@ UM/MOD  SWAP  
+   2SWAP   R@ FM/MOD 
+   ROT ROT R> UM/MOD   NIP
+   0 D+ ;
+
+: M*/ ( d1 n1 +n2 -- d2 )   >R dn* R> tn/ ;
+
+\ Dies sollte die floored Variante sein. 

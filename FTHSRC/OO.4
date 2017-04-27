@@ -1,0 +1,42 @@
+\ Definitions
+\ ~~~~~~~~~~~ 
+0 VALUE NIL  0 VALUE CUROBJ
+' NIL >BODY TO NIL
+: .$      ( a--) COUNT TYPE ;
+: PART:   ( a--) CREATE NIL , , HERE 0 , :NONAME DOES> ( --pfa) ;
+: ;;      ( x--) POSTPONE ; SWAP ! ; IMMEDIATE
+: OBJECT:  ( --) NIL PART: ;
+: WORD,   ( c-a) WORD C@ CHAR+ ALLOT ALIGN ;
+: METHOD: ( a--) HERE OVER @ , SWAP ! BL WORD, HERE 0 , :NONAME ;
+: M? ( sl--at|f) BEGIN @ DUP NIL <> WHILE OVER COUNT 2 PICK CELL+ COUNT
+                 COMPARE 0= IF NIP -1 NIL THEN REPEAT DROP -1 = ;
+: (MEXEC) ( a--) CELL+ DUP C@ CHAR+ + ALIGNED @ EXECUTE ;
+: PARENT ( a--a) CELL+ @ ;
+: MEXEC  ( sa--) 2DUP M? IF NIP NIP (MEXEC) EXIT THEN 
+                 PARENT DUP NIL = IF DROP .$ ." ? " ELSE RECURSE THEN ;
+: -->     ( s--) ' >BODY DUP TO CUROBJ MEXEC ;
+
+
+\ Examples
+\ ~~~~~~~~
+OBJECT: TEST ;;
+TEST METHOD: HELLO ." Hello world " ;;
+
+C" HELLO" --> TEST                       \ Hello world ok
+
+TEST PART: TEST2 ;;
+TEST2 METHOD: GOODBYE ." That's all " ;;
+
+C" GOODBYE" --> TEST2                    \ That's all ok
+C" HELLO" --> TEST2                      \ Hello world ok
+
+TEST PART: SHAPE ;;
+SHAPE METHOD: COLOUR CUROBJ 2 CELLS + @ EXECUTE .$ ."  " ;;
+SHAPE PART: BLOCK C" Red" ;;
+SHAPE PART: SPHERE C" Green" ;;
+
+C" COLOUR" --> BLOCK                     \ Red ok
+C" COLOUR" --> SPHERE                    \ Green ok
+C" HELLO" --> BLOCK                      \ Hello World ok
+
+

@@ -1,0 +1,31 @@
+\ TIMER@ nach Bernd Paysan, VD 2/94
+\ diesmal in high level fuer F68KANS auf Atari
+
+\ Code timer@ ( -- time )
+\     BEGIN  $C0 # D1 move  $4BA #) D0 move
+\            .b $FFFFFA23 #) D1 sub  .l $4BA #) D0 cmp  0= UNTIL
+\     6 # D0 lsl  D0 D1 add  D0 D0 add  D1 D0 add
+\     D0 SP -) move  Next end-code
+
+m: 192* ( n1 -- 192*n1 ) 
+	6 LSHIFT DUP 2* + ; 
+
+HEX
+     4BA  (abs) CONSTANT hz200      \ wird per Interrupt 
+									\ hochgezaehlt, wenn der 
+									\ rtc_ticker abgelaufen ist 	
+FFFFFA23  (abs) CONSTANT rtc_ticker \ aktueller Tickerwert 
+      C0 ( 192) CONSTANT max_ticker \ Initialwert des Tickers
+DECIMAL
+
+: TIMER@
+	hz200 @
+	rtc_ticker C@ 
+	OVER hz200 @ = 				\ Ueberlauf, waehrend rtc_ticker 
+								\ geholt wurde?
+	IF max_ticker - SWAP 192*  
+	   - NEGATE  				\ hz200*192 + (max-rtc) 
+	ELSE 2DROP RECURSE THEN     \ nochmal das ganze
+	;
+
+\ TIMER@ braucht auf meiner Janus-Karte (68k/16Mhz) 42.98 Microsec.

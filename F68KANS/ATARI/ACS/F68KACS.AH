@@ -1,0 +1,1646 @@
+/*
+
+		This file was created with ACS2.20 (c) Stefan Bachert 1991, 1992, 1993, 1994
+
+		The contents are based on file: C:\F\F68KANS\ATARI\ACS\F68KACS.ACS
+
+		compiled at: Wed Mar 01 22:36:14 1995 
+*/
+
+
+/*	 GUI-LANGUAGE  */
+#define ACS_LANG1
+
+
+/*		ANSI-C Prototypes		*/
+
+static void Aed_cutclip (void);
+static void Aed_cutlinetoclip (void);
+static void Aed_find (void);
+static void Aed_findnext (void);
+static void Aed_findsel (void);
+static void Aed_font (void);
+static void Aed_fromclip (void);
+static void Aed_gotoline (void);
+static void Aed_info (void);
+static void Aed_merge (void);
+static void Aed_open (void);
+static void Aed_option (void);
+static void Aed_quit (void);
+static void Aed_replace (void);
+static void Aed_replacenext (void);
+static void Aed_save (void);
+static void Aed_saveas (void);
+static void Aed_selall (void);
+static void Aed_swap (void);
+static void Aed_toclip (void);
+static void Aed_undo (void);
+static void Aed_wrap (void);
+static void Awd_module (void);
+static void Awd_quit (void);
+static void Awd_save (void);
+static void dochangedir (void);
+static void doinclude (void);
+static void doloadsel (void);
+static void dostreamin (void);
+static void dotreaminbydesc (void);
+static void edit_text (void);
+static void ins_load_fromclip (void);
+static void m_toggle_docr (void);
+static void m_toggle_echo (void);
+static Awindow* make_about (void* para);
+
+
+
+
+/*		STRINGS				*/
+
+static char TEXT_01      [] = "";
+static char TEXT_02      [] = "  öber mich ...";
+static char TEXT_03      [] = "  Cutline ^Y";
+static char TEXT_04      [] = "--------------------";
+static char TEXT_05      [] = "  by description...   ";
+static char TEXT_06      [] = "  INCLUDE-FILE ...    ";
+static char TEXT_07      [] = "  Cutline     ^Y";
+static char TEXT_08      [] = "Copyright by|Joerg Plewe|1988-1995";
+static char TEXT_09      [] = "----------------------";
+static char TEXT_10      [] = "GEM loader for F68KANS";
+static char TEXT_11      [] = " F68KANS ";
+static char TEXT_12      [] = " Options ";
+static char TEXT_13      [] = "Neuer Editor";
+static char TEXT_14      [] = "  Quit F68KANS    ^Q";
+static char TEXT_15      [] = "  Change directory... ";
+static char TEXT_16      [] = " File ";
+static char TEXT_17      [] = "  Stream in...        ";
+static char TEXT_18      [] = "  Edit...             ";
+static char TEXT_19      [] = " File";
+static char TEXT_20      [] = "  Close           ^U";
+static char TEXT_21      [] = " Block";
+static char TEXT_22      [] = " Compile";
+static char TEXT_23      [] = "  Save as...      ^M";
+static char TEXT_24      [] = "  Cut     ^X";
+static char TEXT_25      [] = "  Paste   ^V";
+static char TEXT_26      [] = "  Copy    ^C";
+static char TEXT_27      [] = "  Open...         ^O";
+static char TEXT_28      [] = "  Add...";
+static char TEXT_29      [] = "  Change path...  ^P";
+static char TEXT_30      [] = "  öber mich...";
+static char TEXT_31      [] = "  New editor...   ^N";
+static char TEXT_32      [] = " Find";
+static char TEXT_33      [] = "  Replace...    ^R";
+static char TEXT_34      [] = "  Find block  TAB";
+static char TEXT_35      [] = "  ...next       ^G";
+static char TEXT_36      [] = "  Find...       ^F";
+static char TEXT_37      [] = " Extra";
+static char TEXT_38      [] = "  INCLUDE-FILE...  ^I";
+static char TEXT_39      [] = "  Selection        ^E";
+static char TEXT_40      [] = "  Fonts...    F";
+static char TEXT_41      [] = "  with echo         ";
+static char TEXT_42      [] = " Options";
+static char TEXT_43      [] = "  ...next       ^T";
+static char TEXT_44      [] = "  Information...  ^I";
+static char TEXT_45      [] = "  add CR";
+static char TEXT_46      [] = "  Save            ^S";
+static char TEXT_47      [] = "  UNDO      ";
+static char TEXT_48      [] = "  Remove          ^D";
+static char TEXT_49      [] = "  Select all  ^A";
+static char TEXT_50      [] = "  Paste       ^V";
+static char TEXT_51      [] = "  Turn chars  T";
+static char TEXT_52      [] = "  Copy        ^C";
+static char TEXT_53      [] = "  Goto...       ^L";
+static char TEXT_54      [] = "  Cut         ^X";
+static char TEXT_55      [] = "  Fonts...   F";
+static char TEXT_56      [] = "  Load module...  ^M";
+static char TEXT_57      [] = "  Options..  O";
+static char TEXT_58      [] = "  Wrap..     U";
+static char TEXT_59      [] = " Window ";
+static char TEXT_60      [] = "  Change     ^W";
+static char TEXT_61      [] = "  from List  ^L";
+static char TEXT_62      [] = "  Icons vertical    ^T";
+static char TEXT_63      [] = "  Behaviour...      V";
+static char TEXT_64      [] = "  Icons horizontal  ^Z";
+static char TEXT_66      [] = "  ...Save           S";
+static char TEXT_68      [] = "  about F68KANS ...";
+
+
+/*		AUSERBLK		*/
+
+static AUSERBLK A_ARROWS03   = {A_arrows, 0x22090001L , NULL, NULL, NULL, NULL};
+static AUSERBLK A_FTEXT01    = {A_ftext, 0x1c800dL   , Auo_ftext   , TEXT_08     , NULL, NULL};
+static AUSERBLK A_INNERFRAME02 = {A_innerframe, 0x11008f19L , Auo_string  , TEXT_10     , NULL, NULL};
+
+
+/*		ICONS		*/
+
+static INT16 _MSK_NEUEDIT_ICON [] = {
+		0x0fff, 0xffff, 0xff00, 0x0fff, 0xffff, 0xff80, 0x0fff, 0xffff, 
+		0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 
+		0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 
+		0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 
+		0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 
+		0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 
+		0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 
+		0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 
+		0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 
+		0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 
+		0xfffc, 0x0fff, 0xffff, 0xfffc, 0x0fff, 0xffff, 0xfffc, 0x03ff, 
+		0xffff, 0xfffc, 0x03ff, 0xffff, 0xfffc};
+static INT16 _DAT_NEUEDIT_ICON [] = {
+		0x0fff, 0xffff, 0xff00, 0x0800, 0x0000, 0x0180, 0x0800, 0x0000, 
+		0x017c, 0x0879, 0x9fdf, 0x7524, 0x0879, 0x9fdf, 0x75f4, 0x0800, 
+		0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 
+		0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 
+		0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 
+		0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 
+		0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 
+		0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 
+		0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 
+		0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 0x0014, 0x0800, 0x0000, 
+		0x0014, 0x0800, 0x0000, 0x0014, 0x0fff, 0xffff, 0xfff4, 0x0200, 
+		0x0000, 0x0004, 0x03ff, 0xffff, 0xfffc};
+static CICONBLK NEUEDIT_ICON = {{
+		_MSK_NEUEDIT_ICON, _DAT_NEUEDIT_ICON, TEXT_13,
+		0x1000,  0,  0, 12,  0, 48, 31,  0, 32, 72,  8},NULL};
+
+
+
+/*		MENU TREES		*/
+
+static OBJECT actionmenu  		  = { -1,  1,  5, 25,    0x0,    0x0,  0x00000000L				 ,  0,  0, 90, 25 };
+static OBJECT	_01_actionmenu   = {  5,  2,  2, 20,    0x0,    0x0,  0x00001100L				 ,  0,  0, 90, 513 };
+static OBJECT	_02_actionmenu   = {  1,  3,  4, 25,    0x0,    0x0,  0x00000000L				 ,  2,  0, 13, 769 };
+static OBJECT	_03_actionmenu   = {  4, -1, -1, 32,    0x0,    0x0, (long) TEXT_01      ,  0,  0,  6, 769 };
+static OBJECT	_04_actionmenu   = {  2, -1, -1, 32,    0x0,    0x0, (long) TEXT_16      ,  6,  0,  7, 769 };
+static OBJECT	_05_actionmenu   = {  0,  6, 15, 25,    0x0,    0x0,  0x00000000L				 ,  0, 769, 80, 19 };
+static OBJECT	_06_actionmenu   = { 15,  7, 14, 20,    0x0,    0x0,  0x00ff1100L				 ,  2,  0, 20,  8 };
+static OBJECT	_07_actionmenu   = {  8, -1, -1, 28,    0x0, 0x2000, (long) TEXT_02      ,  0,  0, 20,  1 };
+static OBJECT	_08_actionmenu   = {  9, -1, -1, 28,    0x0, 0x2008, (long) TEXT_04      ,  0,  1, 20,  1 };
+static OBJECT	_09_actionmenu   = { 10, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  2, 20,  1 };
+static OBJECT	_10_actionmenu   = { 11, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  3, 20,  1 };
+static OBJECT	_11_actionmenu   = { 12, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  4, 20,  1 };
+static OBJECT	_12_actionmenu   = { 13, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  5, 20,  1 };
+static OBJECT	_13_actionmenu   = { 14, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  6, 20,  1 };
+static OBJECT	_14_actionmenu   = {  6, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  7, 20,  1 };
+static OBJECT	_15_actionmenu   = {  5, 16, 28, 20,    0x0,    0x0,  0x00ff1101L				 ,  8,  0, 22,  8 };
+static OBJECT	_16_actionmenu   = { 18, -1, -1, 32,    0x0,    0x0, (long) TEXT_15      ,  0,  0, 22,  1 };
+static AOBJECT _16aactionmenu   = {dochangedir , NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_18_actionmenu   = { 19, -1, -1, 32,    0x0,    0x0, (long) TEXT_09      ,  0,  1, 23,  1 };
+static OBJECT	_19_actionmenu   = { 21, -1, -1, 32,    0x0,    0x0, (long) TEXT_05      ,  0,  5, 22,  1 };
+static AOBJECT _19aactionmenu   = {dotreaminbydesc, NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_21_actionmenu   = { 23, -1, -1, 32,    0x0,    0x0, (long) TEXT_17      ,  0,  4, 22,  1 };
+static AOBJECT _21aactionmenu   = {dostreamin  , NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_23_actionmenu   = { 25, 24, 24, 32,    0x0,    0x0, (long) TEXT_09      ,  0,  3, 23,  1 };
+static OBJECT	_24_actionmenu   = { 23, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   , 10,  0, 13,  1 };
+static OBJECT	_25_actionmenu   = { 27, -1, -1, 32,    0x0,    0x0, (long) TEXT_18      ,  0,  2, 22,  1 };
+static AOBJECT _25aactionmenu   = {edit_text   , NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_27_actionmenu   = { 28, -1, -1, 32,    0x0,    0x0, (long) TEXT_09      ,  0,  6, 23,  1 };
+static OBJECT	_28_actionmenu   = { 15, -1, -1, 32,    0x0,    0x0, (long) TEXT_06      ,  0,  7, 22,  1 };
+static AOBJECT _28aactionmenu   = {doinclude   , NULL		 , 0x8020,    0x0, NULL				, NULL				,    0x0, 0					};
+
+static OBJECT m_desktop   		  = { -1,  1,  7, 25,    0x0,    0x0,  0x00000000L				 ,  0,  0, 90, 25 };
+static OBJECT	_01_m_desktop    = {  7,  2,  2, 20,    0x0,    0x0,  0x00001100L				 ,  0,  0, 90, 513 };
+static OBJECT	_02_m_desktop    = {  1,  3,  6, 25,    0x0,    0x0,  0x00000000L				 ,  2,  0, 32, 769 };
+static OBJECT	_03_m_desktop    = {  4, -1, -1, 32,    0x0,    0x0, (long) TEXT_01      ,  0,  0,  6, 769 };
+static OBJECT	_04_m_desktop    = {  5, -1, -1, 32,    0x0,    0x0, (long) TEXT_16      ,  6,  0,  7, 769 };
+static OBJECT	_05_m_desktop    = {  6, -1, -1, 32,    0x0,    0x0, (long) TEXT_59      , 13,  0,  9, 769 };
+static OBJECT	_06_m_desktop    = {  2, -1, -1, 32,    0x0,    0x0, (long) TEXT_12      , 22,  0, 10, 769 };
+static OBJECT	_07_m_desktop    = {  0,  8, 39, 25,    0x0,    0x0,  0x00000000L				 ,  0, 769, 80, 19 };
+static OBJECT	_08_m_desktop    = { 17,  9, 16, 20,    0x0,    0x0,  0x00ff1100L				 ,  2,  0, 20,  8 };
+static OBJECT	_09_m_desktop    = { 10, -1, -1, 28,    0x0, 0x2000, (long) TEXT_68      ,  0,  0, 20,  1 };
+static OBJECT	_10_m_desktop    = { 11, -1, -1, 28,    0x0, 0x2008, (long) TEXT_04      ,  0,  1, 20,  1 };
+static OBJECT	_11_m_desktop    = { 12, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  2, 20,  1 };
+static OBJECT	_12_m_desktop    = { 13, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  3, 20,  1 };
+static OBJECT	_13_m_desktop    = { 14, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  4, 20,  1 };
+static OBJECT	_14_m_desktop    = { 15, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  5, 20,  1 };
+static OBJECT	_15_m_desktop    = { 16, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  6, 20,  1 };
+static OBJECT	_16_m_desktop    = {  8, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  7, 20,  1 };
+static OBJECT	_17_m_desktop    = { 33, 18, 31, 20,    0x0,    0x0,  0x00ff1101L				 ,  8,  0, 21,  9 };
+static OBJECT	_18_m_desktop    = { 20, -1, -1, 28,    0x0,  0x100, (long) TEXT_27      ,  0,  0, 21,  1 };
+static AOBJECT _18am_desktop    = {Awd_open    , NULL		 , 0x8000, 0x844f, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_20_m_desktop    = { 22, -1, -1, 28,    0x0,    0x0, (long) TEXT_20      ,  0,  1, 21,  1 };
+static AOBJECT _20am_desktop    = {Awd_close   , NULL		 , 0x8000, 0x8455, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_22_m_desktop    = { 24, -1, -1, 28,    0x0,    0x0, (long) TEXT_48      ,  0,  2, 21,  1 };
+static AOBJECT _22am_desktop    = {Awd_delete  , NULL		 , 0x8000, 0x8444, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_24_m_desktop    = { 25, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  3, 21,  1 };
+static OBJECT	_25_m_desktop    = { 27, -1, -1, 28,    0x0,    0x0, (long) TEXT_44      ,  0,  4, 21,  1 };
+static AOBJECT _25am_desktop    = {Awd_info    , NULL		 , 0x8000, 0x8449, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_27_m_desktop    = { 28, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  5, 21,  1 };
+static OBJECT	_28_m_desktop    = { 30, -1, -1, 28,    0x0,    0x0, (long) TEXT_56      ,  0,  6, 21,  1 };
+static AOBJECT _28am_desktop    = {Awd_module  , NULL		 , 0x8000, 0x844d, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_30_m_desktop    = { 31, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  7, 21,  1 };
+static OBJECT	_31_m_desktop    = { 17, -1, -1, 28,    0x0,    0x0, (long) TEXT_14      ,  0,  8, 21,  1 };
+static AOBJECT _31am_desktop    = {Awd_quit    , NULL		 , 0x8000, 0x8451, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_33_m_desktop    = { 39, 34, 37, 20,    0x0,    0x0,  0x00ff1101L				 , 15,  0, 16,  3 };
+static OBJECT	_34_m_desktop    = { 36, -1, -1, 28,    0x0,  0x100, (long) TEXT_60      ,  0,  0, 16,  1 };
+static AOBJECT _34am_desktop    = {Awi_up      , NULL		 , 0x8000, 0x8457, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_36_m_desktop    = { 37, -1, -1, 24,    0x0,  0x108, (long) &A_ARROWS03   ,  0,  1, 16,  1 };
+static OBJECT	_37_m_desktop    = { 33, -1, -1, 28,    0x0,  0x100, (long) TEXT_61      ,  0,  2, 16,  1 };
+static AOBJECT _37am_desktop    = {Awd_list    , NULL		 , 0x8000, 0x844c, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_39_m_desktop    = {  7, 40, 47, 20,    0x0,    0x0,  0x00ff1101L				 , 24,  0, 23,  5 };
+static OBJECT	_40_m_desktop    = { 42, -1, -1, 28,    0x0,  0x100, (long) TEXT_64      ,  0,  0, 23,  1 };
+static AOBJECT _40am_desktop    = {Awd_hor     , NULL		 , 0x8000, 0x845a, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_42_m_desktop    = { 44, -1, -1, 28,    0x0,  0x100, (long) TEXT_62      ,  0,  1, 23,  1 };
+static AOBJECT _42am_desktop    = {Awd_ver     , NULL		 , 0x8000, 0x8454, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_44_m_desktop    = { 45, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  2, 23,  1 };
+static OBJECT	_45_m_desktop    = { 47, -1, -1, 28,    0x0,  0x100, (long) TEXT_63      ,  0,  3, 23,  1 };
+static AOBJECT _45am_desktop    = {Awd_behaviour, NULL		 , 0x8000, 0x8856, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_47_m_desktop    = { 39, -1, -1, 28,    0x0,  0x100, (long) TEXT_66      ,  0,  4, 23,  1 };
+static AOBJECT _47am_desktop    = {Awd_save    , NULL		 , 0x8020, 0x8853, NULL				, NULL				,    0x0, 0					};
+
+static OBJECT m_editor    		  = { -1,  1,  9, 25,    0x0,    0x0,  0x00000000L				 ,  0,  0, 90, 25 };
+static OBJECT	_01_m_editor     = {  9,  2,  2, 20,    0x0,    0x0,  0x00001100L				 ,  0,  0, 90, 513 };
+static OBJECT	_02_m_editor     = {  1,  3,  8, 25,    0x0,    0x0,  0x00000000L				 ,  2,  0, 46, 769 };
+static OBJECT	_03_m_editor     = {  4, -1, -1, 32,    0x0,    0x0, (long) TEXT_01      ,  0,  0,  6, 769 };
+static OBJECT	_04_m_editor     = {  5, -1, -1, 32,    0x0,    0x0, (long) TEXT_19      ,  6,  0,  7, 769 };
+static OBJECT	_05_m_editor     = {  6, -1, -1, 32,    0x0,    0x0, (long) TEXT_21      , 13,  0,  8, 769 };
+static OBJECT	_06_m_editor     = {  7, -1, -1, 32,    0x0,    0x0, (long) TEXT_22      , 21,  0,  9, 769 };
+static OBJECT	_07_m_editor     = {  8, -1, -1, 32,    0x0,    0x0, (long) TEXT_32      , 30,  0,  8, 769 };
+static OBJECT	_08_m_editor     = {  2, -1, -1, 32,    0x0,    0x0, (long) TEXT_37      , 38,  0,  8, 769 };
+static OBJECT	_09_m_editor     = {  0, 10, 79, 25,    0x0,    0x0,  0x00000000L				 ,  0, 769, 80, 19 };
+static OBJECT	_10_m_editor     = { 19, 11, 18, 20,    0x0,    0x0,  0x00ff1100L				 ,  2,  0, 20,  8 };
+static OBJECT	_11_m_editor     = { 12, -1, -1, 28,    0x0, 0x2000, (long) TEXT_30      ,  0,  0, 20,  1 };
+static OBJECT	_12_m_editor     = { 13, -1, -1, 28,    0x0, 0x2008, (long) TEXT_04      ,  0,  1, 20,  1 };
+static OBJECT	_13_m_editor     = { 14, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  2, 20,  1 };
+static OBJECT	_14_m_editor     = { 15, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  3, 20,  1 };
+static OBJECT	_15_m_editor     = { 16, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  4, 20,  1 };
+static OBJECT	_16_m_editor     = { 17, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  5, 20,  1 };
+static OBJECT	_17_m_editor     = { 18, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  6, 20,  1 };
+static OBJECT	_18_m_editor     = { 10, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  7, 20,  1 };
+static OBJECT	_19_m_editor     = { 36, 20, 34, 20,    0x0,    0x0,  0x00ff1101L				 ,  8,  0, 21,  9 };
+static OBJECT	_20_m_editor     = { 22, -1, -1, 28,    0x0,  0x100, (long) TEXT_23      ,  0,  4, 20,  1 };
+static AOBJECT _20am_editor     = {Aed_saveas  , NULL		 , 0x8000, 0x844d, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_22_m_editor     = { 24, -1, -1, 32,    0x0,    0x0, (long) TEXT_31      ,  0,  5, 20,  1 };
+static AOBJECT _22am_editor     = {edit_text   , NULL		 , 0x8000, 0x844e, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_24_m_editor     = { 26, -1, -1, 28,    0x0,  0x100, (long) TEXT_27      ,  0,  0, 21,  1 };
+static AOBJECT _24am_editor     = {Aed_open    , NULL		 , 0x8000, 0x844f, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_26_m_editor     = { 27, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  2, 21,  1 };
+static OBJECT	_27_m_editor     = { 29, -1, -1, 28,    0x0,  0x100, (long) TEXT_28      ,  0,  1, 21,  1 };
+static AOBJECT _27am_editor     = {Aed_merge   , NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_29_m_editor     = { 31, -1, -1, 28,    0x0,  0x100, (long) TEXT_46      ,  0,  3, 21,  1 };
+static AOBJECT _29am_editor     = {Aed_save    , NULL		 , 0x8000, 0x8453, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_31_m_editor     = { 32, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  6, 21,  1 };
+static OBJECT	_32_m_editor     = { 34, -1, -1, 28,    0x0,  0x100, (long) TEXT_44      ,  0,  7, 21,  1 };
+static AOBJECT _32am_editor     = {Aed_info    , NULL		 , 0x8000, 0x8449, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_34_m_editor     = { 19, -1, -1, 28,    0x0,  0x100, (long) TEXT_48      ,  0,  8, 21,  1 };
+static AOBJECT _34am_editor     = {Aed_quit    , NULL		 , 0x8000, 0x8444, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_36_m_editor     = { 53, 37, 51, 20,    0x0,    0x0,  0x00ff1101L				 , 15,  0, 17,  9 };
+static OBJECT	_37_m_editor     = { 39, -1, -1, 28,    0x0,  0x100, (long) TEXT_50      ,  0,  4, 17,  1 };
+static AOBJECT _37am_editor     = {Aed_fromclip, NULL		 , 0x8000, 0x8456, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_39_m_editor     = { 41, -1, -1, 28,    0x0,  0x100, (long) TEXT_52      ,  0,  3, 17,  1 };
+static AOBJECT _39am_editor     = {Aed_toclip  , NULL		 , 0x8000, 0x8443, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_41_m_editor     = { 43, -1, -1, 28,    0x0,  0x100, (long) TEXT_54      ,  0,  2, 17,  1 };
+static AOBJECT _41am_editor     = {Aed_cutclip , NULL		 , 0x8000, 0x8458, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_43_m_editor     = { 45, -1, -1, 28,    0x0,  0x100, (long) TEXT_47      ,  0,  0, 17,  1 };
+static AOBJECT _43am_editor     = {Aed_undo    , NULL		 , 0x8000, 0x800f, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_45_m_editor     = { 46, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  1, 17,  1 };
+static OBJECT	_46_m_editor     = { 48, -1, -1, 28,    0x0,  0x100, (long) TEXT_49      ,  0,  8, 17,  1 };
+static AOBJECT _46am_editor     = {Aed_selall  , NULL		 , 0x8000, 0x8441, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_48_m_editor     = { 50, -1, -1, 28,    0x0,  0x100, (long) TEXT_51      ,  0,  7, 17,  1 };
+static AOBJECT _48am_editor     = {Aed_swap    , NULL		 , 0x8000, 0x8854, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_50_m_editor     = { 51, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  6, 17,  1 };
+static OBJECT	_51_m_editor     = { 36, -1, -1, 28,    0x0,    0x0, (long) TEXT_07      ,  0,  5, 17,  1 };
+static AOBJECT _51am_editor     = {Aed_cutlinetoclip, NULL		 , 0x8000, 0x8459, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_53_m_editor     = { 64, 54, 62, 20,    0x0,    0x0,  0x00ff1101L				 , 23,  0, 22,  6 };
+static OBJECT	_54_m_editor     = { 56, -1, -1, 32,    0x0,    0x0, (long) TEXT_05      ,  0,  3, 22,  1 };
+static AOBJECT _54am_editor     = {dotreaminbydesc, NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_56_m_editor     = { 58, -1, -1, 32,    0x0,    0x0, (long) TEXT_17      ,  0,  2, 22,  1 };
+static AOBJECT _56am_editor     = {dostreamin  , NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_58_m_editor     = { 59, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  1, 22,  1 };
+static OBJECT	_59_m_editor     = { 61, -1, -1, 28,    0x0,    0x0, (long) TEXT_39      ,  0,  0, 22,  1 };
+static AOBJECT _59am_editor     = {doloadsel   , NULL		 , 0x8000, 0x8445, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_61_m_editor     = { 62, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  4, 22,  1 };
+static OBJECT	_62_m_editor     = { 53, -1, -1, 28,    0x0,  0x100, (long) TEXT_38      ,  0,  5, 22,  1 };
+static AOBJECT _62am_editor     = {doinclude   , NULL		 , 0x8000, 0x8449, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_64_m_editor     = { 79, 65, 78, 20,    0x0,    0x0,  0x00ff1101L				 , 32,  0, 19,  8 };
+static OBJECT	_65_m_editor     = { 67, -1, -1, 28,    0x0,  0x100, (long) TEXT_36      ,  0,  0, 19,  1 };
+static AOBJECT _65am_editor     = {Aed_find    , NULL		 , 0x8000, 0x8446, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_67_m_editor     = { 69, -1, -1, 28,    0x0,  0x100, (long) TEXT_35      ,  0,  1, 19,  1 };
+static AOBJECT _67am_editor     = {Aed_findnext, NULL		 , 0x8000, 0x8447, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_69_m_editor     = { 71, -1, -1, 28,    0x0,  0x100, (long) TEXT_34      ,  0,  2, 19,  1 };
+static AOBJECT _69am_editor     = {Aed_findsel , NULL		 , 0x8000, 0x8809, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_71_m_editor     = { 72, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  3, 19,  1 };
+static OBJECT	_72_m_editor     = { 74, -1, -1, 28,    0x0,  0x100, (long) TEXT_33      ,  0,  4, 19,  1 };
+static AOBJECT _72am_editor     = {Aed_replace , NULL		 , 0x8000, 0x8452, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_74_m_editor     = { 76, -1, -1, 28,    0x0,  0x100, (long) TEXT_43      ,  0,  5, 19,  1 };
+static AOBJECT _74am_editor     = {Aed_replacenext, NULL		 , 0x8000, 0x8454, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_76_m_editor     = { 78, -1, -1, 28,    0x0,  0x100, (long) TEXT_53      ,  0,  7, 19,  1 };
+static AOBJECT _76am_editor     = {Aed_gotoline, NULL		 , 0x8000, 0x844c, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_78_m_editor     = { 64, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  6, 19,  1 };
+static OBJECT	_79_m_editor     = {  9, 80, 84, 20,    0x0,    0x0,  0x00ff1101L				 , 40,  0, 16,  3 };
+static OBJECT	_80_m_editor     = { 82, -1, -1, 28,    0x0,  0x100, (long) TEXT_55      ,  0,  2, 15,  1 };
+static AOBJECT _80am_editor     = {Aed_font    , NULL		 , 0x8000, 0x8846, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_82_m_editor     = { 84, -1, -1, 28,    0x0,  0x100, (long) TEXT_58      ,  0,  0, 15,  1 };
+static AOBJECT _82am_editor     = {Aed_wrap    , NULL		 , 0x8000, 0x8855, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_84_m_editor     = { 79, -1, -1, 28,    0x0,  0x100, (long) TEXT_57      ,  0,  1, 15,  1 };
+static AOBJECT _84am_editor     = {Aed_option  , NULL		 , 0x8020, 0x884f, NULL				, NULL				,    0x0, 0					};
+
+static OBJECT m_interactiv		  = { -1,  1,  9, 25,    0x0,    0x0,  0x00000000L				 ,  0,  0, 90, 25 };
+static OBJECT	_01_m_interactiv = {  9,  2,  2, 20,    0x0,    0x0,  0x00001100L				 ,  0,  0, 90, 513 };
+static OBJECT	_02_m_interactiv = {  1,  3,  8, 25,    0x0,    0x0,  0x00000000L				 ,  2,  0, 46, 769 };
+static OBJECT	_03_m_interactiv = {  4, -1, -1, 32,    0x0,    0x0, (long) TEXT_01      ,  0,  0,  6, 769 };
+static OBJECT	_04_m_interactiv = {  5, -1, -1, 32,    0x0,    0x0, (long) TEXT_19      ,  6,  0,  7, 769 };
+static OBJECT	_05_m_interactiv = {  6, -1, -1, 32,    0x0,    0x0, (long) TEXT_21      , 13,  0,  8, 769 };
+static OBJECT	_06_m_interactiv = {  7, -1, -1, 32,    0x0,    0x0, (long) TEXT_22      , 21,  0,  9, 769 };
+static OBJECT	_07_m_interactiv = {  8, -1, -1, 32,    0x0,    0x0, (long) TEXT_32      , 30,  0,  8, 769 };
+static OBJECT	_08_m_interactiv = {  2, -1, -1, 32,    0x0,    0x0, (long) TEXT_37      , 38,  0,  8, 769 };
+static OBJECT	_09_m_interactiv = {  0, 10, 70, 25,    0x0,    0x0,  0x00000000L				 ,  0, 769, 80, 19 };
+static OBJECT	_10_m_interactiv = { 19, 11, 18, 20,    0x0,    0x0,  0x00ff1100L				 ,  2,  0, 20,  8 };
+static OBJECT	_11_m_interactiv = { 12, -1, -1, 28,    0x0, 0x2000, (long) TEXT_30      ,  0,  0, 20,  1 };
+static OBJECT	_12_m_interactiv = { 13, -1, -1, 28,    0x0, 0x2008, (long) TEXT_04      ,  0,  1, 20,  1 };
+static OBJECT	_13_m_interactiv = { 14, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  2, 20,  1 };
+static OBJECT	_14_m_interactiv = { 15, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  3, 20,  1 };
+static OBJECT	_15_m_interactiv = { 16, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  4, 20,  1 };
+static OBJECT	_16_m_interactiv = { 17, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  5, 20,  1 };
+static OBJECT	_17_m_interactiv = { 18, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  6, 20,  1 };
+static OBJECT	_18_m_interactiv = { 10, -1, -1, 28,    0x0, 0x2000, (long) TEXT_01      ,  0,  7, 20,  1 };
+static OBJECT	_19_m_interactiv = { 31, 20, 29, 20,    0x0,    0x0,  0x00ff1101L				 ,  8,  0, 21,  6 };
+static OBJECT	_20_m_interactiv = { 22, -1, -1, 32,    0x0,    0x0, (long) TEXT_29      ,  0,  0, 21,  1 };
+static AOBJECT _20am_interactiv = {dochangedir , NULL		 , 0x8000, 0x8450, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_22_m_interactiv = { 24, -1, -1, 28,    0x0,  0x100, (long) TEXT_28      ,  0,  3, 21,  1 };
+static AOBJECT _22am_interactiv = {Aed_merge   , NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_24_m_interactiv = { 26, -1, -1, 28,    0x0,  0x100, (long) TEXT_27      ,  0,  2, 21,  1 };
+static AOBJECT _24am_interactiv = {Aed_open    , NULL		 , 0x8000, 0x844f, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_26_m_interactiv = { 27, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  1, 21,  1 };
+static OBJECT	_27_m_interactiv = { 29, -1, -1, 28,    0x0,  0x100, (long) TEXT_23      ,  0,  4, 20,  1 };
+static AOBJECT _27am_interactiv = {Aed_saveas  , NULL		 , 0x8000, 0x844d, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_29_m_interactiv = { 19, -1, -1, 32,    0x0,    0x0, (long) TEXT_31      ,  0,  5, 21,  1 };
+static AOBJECT _29am_interactiv = {edit_text   , NULL		 , 0x8000, 0x844e, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_31_m_interactiv = { 40, 32, 38, 20,    0x0,    0x0,  0x00ff1101L				 , 15,  0, 13,  4 };
+static OBJECT	_32_m_interactiv = { 34, -1, -1, 28,    0x0,  0x100, (long) TEXT_24      ,  0,  0, 13,  1 };
+static AOBJECT _32am_interactiv = {Aed_cutclip , NULL		 , 0x8000, 0x8458, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_34_m_interactiv = { 36, -1, -1, 28,    0x0,  0x100, (long) TEXT_26      ,  0,  1, 13,  1 };
+static AOBJECT _34am_interactiv = {Aed_toclip  , NULL		 , 0x8000, 0x8443, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_36_m_interactiv = { 38, -1, -1, 28,    0x0,  0x100, (long) TEXT_25      ,  0,  2, 13,  1 };
+static AOBJECT _36am_interactiv = {ins_load_fromclip, NULL		 , 0x8000, 0x8456, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_38_m_interactiv = { 31, -1, -1, 28,    0x0,    0x0, (long) TEXT_03      ,  0,  3, 13,  1 };
+static AOBJECT _38am_interactiv = {Aed_cutlinetoclip, NULL		 , 0x8000, 0x8459, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_40_m_interactiv = { 58, 41, 56, 20,    0x0,    0x0,  0x00ff1101L				 , 23,  0, 22,  9 };
+static OBJECT	_41_m_interactiv = { 43, -1, -1, 32,    0x0,    0x0, (long) TEXT_05      ,  0,  3, 22,  1 };
+static AOBJECT _41am_interactiv = {dotreaminbydesc, NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_43_m_interactiv = { 45, -1, -1, 32,    0x0,    0x0, (long) TEXT_17      ,  0,  2, 22,  1 };
+static AOBJECT _43am_interactiv = {dostreamin  , NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_45_m_interactiv = { 46, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  1, 22,  1 };
+static OBJECT	_46_m_interactiv = { 48, -1, -1, 28,    0x0,    0x0, (long) TEXT_39      ,  0,  0, 22,  1 };
+static AOBJECT _46am_interactiv = {doloadsel   , NULL		 , 0x8000, 0x8445, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_48_m_interactiv = { 50, -1, -1, 28,    0x0,    0x4, (long) TEXT_41      ,  0,  5, 22,  1 };
+static AOBJECT _48am_interactiv = {m_toggle_echo, NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_50_m_interactiv = { 51, -1, -1, 28,    0x0,    0x8, (long) TEXT_42      ,  2,  4,  9,  1 };
+static OBJECT	_51_m_interactiv = { 52, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   , 11,  4, 11,  1 };
+static OBJECT	_52_m_interactiv = { 53, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  4,  2,  1 };
+static OBJECT	_53_m_interactiv = { 55, -1, -1, 28,    0x0,  0x100, (long) TEXT_38      ,  0,  8, 22,  1 };
+static AOBJECT _53am_interactiv = {doinclude   , NULL		 , 0x8000, 0x8449, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_55_m_interactiv = { 56, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  7, 22,  1 };
+static OBJECT	_56_m_interactiv = { 40, -1, -1, 28,    0x0,    0x4, (long) TEXT_45      ,  0,  6, 22,  1 };
+static AOBJECT _56am_interactiv = {m_toggle_docr, NULL		 , 0x8000,    0x0, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_58_m_interactiv = { 70, 59, 68, 20,    0x0,    0x0,  0x00ff1101L				 , 32,  0, 19,  6 };
+static OBJECT	_59_m_interactiv = { 61, -1, -1, 28,    0x0,  0x100, (long) TEXT_36      ,  0,  0, 19,  1 };
+static AOBJECT _59am_interactiv = {Aed_find    , NULL		 , 0x8000, 0x8446, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_61_m_interactiv = { 63, -1, -1, 28,    0x0,  0x100, (long) TEXT_35      ,  0,  1, 19,  1 };
+static AOBJECT _61am_interactiv = {Aed_findnext, NULL		 , 0x8000, 0x8447, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_63_m_interactiv = { 65, -1, -1, 28,    0x0,  0x100, (long) TEXT_34      ,  0,  2, 19,  1 };
+static AOBJECT _63am_interactiv = {Aed_findsel , NULL		 , 0x8000, 0x8809, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_65_m_interactiv = { 66, -1, -1, 24,    0x0,    0x8, (long) &A_ARROWS03   ,  0,  3, 19,  1 };
+static OBJECT	_66_m_interactiv = { 68, -1, -1, 28,    0x0,  0x100, (long) TEXT_33      ,  0,  4, 19,  1 };
+static AOBJECT _66am_interactiv = {Aed_replace , NULL		 , 0x8000, 0x8452, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_68_m_interactiv = { 58, -1, -1, 28,    0x0,  0x100, (long) TEXT_43      ,  0,  5, 18,  1 };
+static AOBJECT _68am_interactiv = {Aed_replacenext, NULL		 , 0x8000, 0x8454, NULL				, NULL				,    0x0, 0					};
+static OBJECT	_70_m_interactiv = {  9, 71, 71, 20,    0x0,    0x0,  0x00ff1101L				 , 40,  0, 17,  1 };
+static OBJECT	_71_m_interactiv = { 70, -1, -1, 28,    0x0,  0x100, (long) TEXT_40      ,  0,  0, 17,  1 };
+static AOBJECT _71am_interactiv = {Aed_font    , NULL		 , 0x8020, 0x8846, NULL				, NULL				,    0x0, 0					};
+
+
+
+/*		OBJECT TREES		*/
+
+static OBJECT O_ABOUT     		  = { -1,  1,  1, 20,    0x0,   0x10,  0x00001c78L				 ,  0,  0, 33, 11 };
+static OBJECT	_01_O_ABOUT      = {  0,  2,  2, 24,   0x40,    0x0, (long) &A_INNERFRAME02 ,  4,  1, 25,  9 };
+static OBJECT	_02_O_ABOUT      = {  1, -1, -1, 24,  0x660,   0x20, (long) &A_FTEXT01    ,  5,  3, 14,  3 };
+
+
+
+/*		WINDOWS		*/
+
+			 Awindow w_about      = {
+		NULL,
+  Awi_service,
+  make_about  ,
+  Awi_open,
+  Awi_init,
+  &O_ABOUT     , NULL, 0, 0, -1,
+		   0xb, { 0,  0, 264, 176},
+		{0, 0, 0, 0}, {0, 0, 0, 0}, {-1, -1, -1, -1}, 0, 0,
+		0xf0f0,
+		TEXT_11     ,
+		TEXT_01     ,
+		10000,    0x0, 0, -1,
+		NULL,
+		NULL,
+		Awi_keys,
+		Awi_obchange,
+		Awi_redraw,
+		Awi_topped,
+		Awi_closed,
+		Awi_fulled,
+		Awi_arrowed,
+		Awi_hslid,
+		Awi_vslid,
+		Awi_sized,
+		Awi_moved};
+
+
+
+
+Adescr ACSdescr = {
+"ACS2.20", 220,
+-4, -4,
+0x3e,
+" F68KANS",
+		&DESKTOP, NULL,
+{
+		{  0, NULL},
+		{  2, NULL},
+		{  3, NULL},
+		{  4, NULL},
+		{  1, NULL},
+		{  5, NULL},
+		{  6, NULL},
+		{  7, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL},
+		{  0, NULL}
+} };
+
+
+/*		ANSI-C Routines		*/
+
+/*
+ * declaration of the BIOS functions
+ */
+long cdecl key();
+long cdecl key_quest();
+void cdecl emit();
+long cdecl emit_quest();
+
+void about(void);
+
+void load_f68k(void);
+void startupstream(void);
+void timer_nokey(void);
+
+void del_block(void);
+void loadselection(OBJECT*);
+
+void insert_char();
+
+void handle_caps();
+
+int keyqmode = 0;
+int keyqcnt = 0;
+char cbuf[1024];
+int cbufcnt = 0, incbuf=0, outcbuf=0;
+
+
+Awindow* neuer_editor();
+
+void char_to_forth();
+void string_to_forth(char*, int);
+
+/* void (*orig_function)(); */
+
+
+static INT16 cursor_block = 0;
+static INT16 save_multitask;
+
+/* static Awindow *protocol; */
+/* static Awindow *proto2; */
+static Awindow *editor;
+Awindow *plotter;
+static Awindow *action;
+
+
+OBJECT *editorentry;
+
+
+jmp_buf jmp_fromKEY;
+jmp_buf jmp_toKEY;
+
+SI_funcarr SI_BIOS_fa[] = {key, key_quest, emit, emit_quest};
+extern SI_funcarr SI_CLIB_fa[];
+extern SI_funcarr SI_FLOT_fa[];
+extern SI_funcarr SI_PBGI_fa[];
+extern SI_funcarr SI_PLOT_fa[];
+
+
+int docr = -1, echo = -1, set_echo = -1;
+
+
+
+
+
+
+
+INT16 ACSinit (void)
+/* Unkown type of routine */
+{
+static long wrap = 2000;	
+Awindow *window;
+Axywh winpos;
+OBJECT *org_editor_menu;
+
+	multitask = save_multitask;
+
+	ACSblk->ACSaboutme = about;
+		
+	/*
+	 * set up the desktop
+	 */
+	window = Awi_root ();						/* root window */
+	if (window == NULL) return FAIL;			/* lege NEU Icon an */
+	(window-> service) (window, AS_ICONNEW, &NEUEDIT_ICON);
+	(window-> service) (window, AS_NEWCALL, &EDITOR.create);
+
+	/*
+ 	 * Change the menu for all editors and switch off toolbar
+ 	 */ 
+	EDITOR.menu = &m_editor;
+	EDITOR.toolbar->ob_height = 0;
+
+	/*
+	 * Create an editor as main interactive window
+	 */
+	org_editor_menu = EDITOR.menu;
+	EDITOR.menu = &m_interactiv;
+	editor = EDITOR.create(NULL);
+	EDITOR.menu = org_editor_menu;	
+
+	editor->service(editor, AS_EDTITLE, "F68KANS Interpreter");
+	editor->service(editor, AS_EDICONTEXT, "F68KANS Interpreter");
+
+	editor->open(editor);
+/*	winpos.x = 50;
+	winpos.y = 0;   
+	winpos.w = editor->wi_act.w;
+	winpos.h = editor->wi_act.h;
+	Awi_moved(editor, &winpos);
+*/
+
+	/*
+	 * now let this editor act as a Forth terminal
+	 */
+	editor->keys = editor_key;
+	editor->service(editor, AS_EDGETENTRY, &editorentry);
+
+
+	Auo_editor(editorentry, AUO_EDWRAP, &wrap); 
+
+	plotter = PLOTTER.create(NULL);
+
+/*	proto2 = PROTOCOL.create(0);
+	proto2->open(proto2); */
+
+
+	Kbshift(0x10);
+	handle_caps();
+
+
+	load_f68k();
+
+	startupstream();
+
+	ACSblk->ACStimer = timer_nokey;
+
+
+	return OK;
+}
+
+
+INT16 ACSinit0 (void)
+/* Unkown type of routine */
+{
+	save_multitask = multitask;
+	multitask = 0;
+	DESKTOP.menu = &m_desktop; 
+
+	return OK;
+}
+
+
+
+
+
+static void Aed_cutclip (void)
+/* Click routine */
+{
+	Aed_toclip();
+	del_block();
+
+}
+
+
+static void Aed_cutlinetoclip (void)
+/* Click routine */
+{
+	OBJECT *entry;
+	long sel[4];		/* Selektionsbereich */
+	long row;	
+
+	entry = ev_window->work;
+	
+	Auo_editor(entry, AUO_EDGETPOS, &row); 
+
+	sel[0] = row; 
+	sel[2] = row+1;
+	sel[1] = sel[3] = 0;
+	Auo_editor(entry, AUO_EDSETSELECT, sel); 
+	
+
+	Aed_cutclip();
+}
+
+
+/* 'Aed_find' Not yet defined by user */
+
+/* 'Aed_findnext' Not yet defined by user */
+
+/* 'Aed_findsel' Not yet defined by user */
+
+/* 'Aed_font' Not yet defined by user */
+
+/* 'Aed_fromclip' Not yet defined by user */
+
+/* 'Aed_gotoline' Not yet defined by user */
+
+/* 'Aed_info' Not yet defined by user */
+
+/* 'Aed_merge' Not yet defined by user */
+
+/* 'Aed_open' Not yet defined by user */
+
+/* 'Aed_option' Not yet defined by user */
+
+/* 'Aed_quit' Not yet defined by user */
+
+/* 'Aed_replace' Not yet defined by user */
+
+/* 'Aed_replacenext' Not yet defined by user */
+
+/* 'Aed_save' Not yet defined by user */
+
+/* 'Aed_saveas' Not yet defined by user */
+
+/* 'Aed_selall' Not yet defined by user */
+
+/* 'Aed_swap' Not yet defined by user */
+
+/* 'Aed_toclip' Not yet defined by user */
+
+/* 'Aed_undo' Not yet defined by user */
+
+/* 'Aed_wrap' Not yet defined by user */
+
+
+
+
+
+
+
+
+
+/* 'Awd_module' Not yet defined by user */
+
+
+/* 'Awd_quit' Not yet defined by user */
+
+/* 'Awd_save' Not yet defined by user */
+
+
+
+void about (void)
+/* Unkown type of routine */
+{
+	Awindow* wi;
+
+	wi = w_about.create(NULL);
+	wi->open(wi);
+}
+
+
+void char_to_forth (int key)
+/* Unkown type of routine */
+{
+	if( keyqmode )
+		{
+		cbuf[incbuf++] = (char)key;
+		incbuf %= 1024;
+		cbufcnt++;
+		key = -1;
+		keyqmode = 0;
+		}
+
+	if( setjmp(jmp_fromKEY) == 0 )
+		longjmp(jmp_toKEY,key);
+}
+
+
+static char *text2 [] = {"", ""};
+static EDITSUBS subdel = {0, 0, 0, 0, 1, text2};
+
+void del_block (void)
+/* Unkown type of routine */
+/*
+ *   deletes marked block of text
+ */ 
+{
+	long sel [4];
+	OBJECT* entry;
+
+	entry = ev_window-> work;
+	
+	Auo_editor(entry, AUO_EDGETSELECT, &sel);
+	if (sel [0] < 0) return;
+
+	subdel. row1 = sel [0];
+	subdel. col1 = sel [1]; 
+	subdel. row2 = sel [2];
+	subdel. col2 = sel [3];
+	Auo_editor(entry, AUO_EDSUB, &subdel);
+	Auo_editor(entry, AUO_UPDATE, &subdel);
+}
+
+
+static void dochangedir (void)
+/* Click routine */
+{
+static char outpath[256] = "";
+char *cptr;
+char *inpath;
+
+	/*
+	 * Fileselektor aufrufen!
+ 	 */
+	Dgetpath(&outpath[2], 0);
+	strcat(&outpath[2],"\\*.*");
+	outpath[1]=':';
+	outpath[0]= Dgetdrv() + 'A';
+
+	inpath = A_fileselect("Change path", outpath, "*");
+
+	if( inpath != NULL)
+		{ 
+			cptr = &inpath[strlen(inpath)];
+			while(*cptr != '\\') *cptr-- = '\0'; 
+			*cptr = '\0';
+
+			Dsetdrv(inpath[0]-'A');
+			Dsetpath(inpath);
+		}
+}
+
+
+static void doinclude (void)
+/* Click routine */
+{
+static char filen[256] = "";
+char cmd[100];
+int len;
+char *flname;
+
+	/*
+	 * Fileselektor aufrufen!
+ 	 */
+	flname = A_fileselect("INLCUDE-FILE", filen, "*"); 
+	if( flname == NULL ) return;
+	strcpy(filen,flname);
+
+	strcpy(cmd, "S");
+	len = strlen(cmd);
+	cmd[len] = '"';
+	cmd[len+1] = ' ';
+	cmd[len+2] = '\0';
+	strcat(cmd, filen);
+
+	len = strlen(cmd);
+	cmd[len] = '"';
+	cmd[len+1] = '\0';
+	strcat(cmd, " INCLUDED \15");
+
+	len = strlen(cmd);
+	string_to_forth(cmd, len);
+
+}
+
+
+static void doloadscrap (void)
+/* Click routine */
+{
+int sc;
+char scrapdir[128];
+FILE *file;	
+int key;
+
+	sc = scrp_read( scrapdir );
+
+
+	if(sc&1)
+		{
+
+		if( scrapdir[0] == '\0')
+			strcpy( scrapdir, "\\");
+
+		if( scrapdir[strlen(scrapdir)-1] != '\\' )
+			strcat(scrapdir, "\\");
+ 
+		strcat(scrapdir,"scrap.txt");
+
+				
+		file = fopen(scrapdir, "r");
+		if( file == NULL ) 
+			{
+			return;
+			}
+
+		echo = set_echo;
+
+		key = getc(file);
+		while(key != EOF) 	
+			{
+			if( key == '\n' ) key = 13;  /* F68KANS reagiert nur auf 13! */
+			char_to_forth(key);
+			key = getc(file);
+			}
+
+		fclose(file);			
+
+		if(docr)
+			char_to_forth(13);
+		
+		echo = -1;
+		}
+}
+
+
+static void doloadsel (void)
+/* Click routine */
+{
+	
+	loadselection(ev_window->work);
+	
+}
+
+
+static void doloadsel_from_interpreter (void)
+{
+
+	loadselection(editorentry);
+
+}
+
+
+static void dostreamin (void)
+/* Click routine */
+{
+
+static char filen[256];
+char *flname;
+FILE *file;
+int key;
+
+
+	/*
+	 * Fileselektor aufrufen!
+ 	 */
+	flname = A_fileselect("Stream in", filen, "*"); 
+	if( flname == NULL ) return;
+	strcpy(filen,flname);
+	
+	file = fopen(filen, "r");
+	if( file == NULL ) return;
+
+	echo = set_echo;
+
+	key = getc(file);
+	while(key != EOF) 	
+		{
+		if( key == '\n' ) key = 13;  /* F68KANS reagiert nur auf 13! */
+		char_to_forth(key);
+		key = getc(file);
+		}
+
+	fclose(file);			
+
+	echo = -1;
+}
+
+
+
+static void dotreaminbydesc (void)
+/* Click routine */
+{
+	static char filen[256];
+	char *flname;
+	FILE *file;
+	char *fptr;
+	int key;
+	FILE *infiles[100];
+	int infilenr=0, i, opened;
+
+
+	/*
+	 * Fileselektor aufrufen!
+ 	 */
+	flname = A_fileselect("Stream in by desc.", filen, "IN"); 
+	if( flname == NULL ) return;
+	strcpy(filen,flname);
+
+	
+	file = fopen(filen, "r");
+	if( file == NULL ) return;
+
+
+	opened = 0;
+
+	fptr = fgets( filen, 256, file );
+	while(fptr != NULL )
+		{
+		filen[strlen(filen)-1] = '\0';
+		infiles[infilenr] = NULL;
+		if ( (infiles[infilenr++] = fopen(filen,"r")) != NULL) 
+			opened ++;
+		fptr = fgets( filen, 256, file );
+		}
+
+	fclose(file);
+
+	if( (opened == 0) || ( opened != infilenr )  )
+		{
+		for(i=0; i<infilenr; i++)
+			if( infiles[i] != NULL )
+				fclose( infiles[i] );
+		return;
+		}
+
+
+	echo = set_echo;
+
+	for(i=0; i<infilenr; i++)
+		{
+		file = infiles[i];
+
+		key = getc(file);
+		while(key != EOF) 	
+			{
+			if( key == '\n' ) key = 13;  /* F68KANS reagiert nur auf 13! */
+			char_to_forth(key);
+			key = getc(file);
+			}
+		fclose(file);
+		}
+	echo = -1;
+}
+
+
+static void edit_text (void)
+/* Click routine */
+{
+	Awindow* wi;
+	char filen[256];
+	char *flname;
+
+
+	/*
+	 * Fileselektor aufrufen!
+ 	 */
+	flname = A_fileselect("New Editor", filen, "*"); 
+	if( flname == NULL ) return;
+	strcpy(filen,flname);
+
+	wi = EDITOR.create(NULL);
+	wi->open(wi); 
+
+	if (wi == NULL) return;
+
+	wi->service(wi, AS_EDLOADFILE, filen);
+}
+
+
+INT16 editor_key (Awindow* wi, INT16 kstate, INT16 key)
+/* wi-> keys routine */
+{
+long rows;
+long isrow;
+char *line;
+int len,i;
+long sel[4];		/* Selektionsbereich */
+
+	handle_caps();
+
+	Auo_editor(editorentry,AUO_EDGETROWS,&rows);
+	Auo_editor(editorentry,AUO_EDGETPOS,&isrow);
+	
+
+	if( ((key & 0xff) == 0xd) && (kstate != 0) )
+		{
+		/* wenn was selektiert ist, dann kompilier das */
+		Auo_editor(editorentry, AUO_EDGETSELECT, sel); 
+	
+		if(sel[0] != -1)
+			{ 
+			doloadsel_from_interpreter();
+			return 0;
+			}
+
+ 		if( rows-1 != isrow )
+        /* nur wenn Cursor nicht in der untersten Zeile, wird 
+		   mit Shift-Return, die Cursorzeile ausgefuehrt
+ 		*/ 
+			{
+			Auo_editor(editorentry, AUO_GETVAL, &line);
+
+			Auo_editor(editorentry, AUO_EDCURHIDE,&line); 
+			Auo_editor(editorentry,AUO_END,&line);
+
+			echo = set_echo;
+			
+			string_to_forth(line,strlen(line));
+			if(docr)
+				char_to_forth(13);
+
+			Auo_editor(editorentry, AUO_EDCURSHOW,&line); 
+			echo = -1;
+			return 0;
+        	}
+		}
+
+	if( (isrow != (rows-1)) || 
+		((key&0xf8ff) == 0x8001 ) ||
+		((key&0xf8ff) == 0x8002 ) 	)
+		{
+		Auok_editor(editorentry, kstate, key); 
+		return 0;
+		}
+
+
+	if( ((key & 0xff) != 0xd) &&
+		((key&0xf8ff) != 0x8003 ) &&
+		((key&0xf8ff) != 0x8004 ) )		
+		insert_char(key);
+
+
+	if( /*( rows-1 == isrow) && */
+		((key&0xf8ff) != 0x8001 ) &&
+		((key&0xf8ff) != 0x8002 ) &&
+		((key&0xf8ff) != 0x8003 ) &&
+		((key&0xf8ff) != 0x8004 ) )
+			char_to_forth(key);
+
+/* will never be reached. Just to make the compiler happy! */
+	return 0;
+
+}
+
+
+void cdecl emit (long ch)
+/* Unkown type of routine */
+{
+static char outline[256];
+static cnt = 0;
+char c;
+static long curline;
+
+	if( echo )
+		{
+		c = ((char*)&ch)[3];
+
+
+		if( c == 0xd) return; 
+
+		if( cnt == 255 || c == '\n' )
+			{
+			outline[cnt] = '\0';
+
+			Auo_editor(editorentry, AUO_EDCURHIDE, &curline); 
+			Auo_editor(editorentry, AUO_END, outline); 			
+			Auo_editor(editorentry, AUO_SETVAL, outline); 
+			Auo_editor(editorentry, AUO_EDNEWLINE, outline); 
+ 			Auo_editor(editorentry, AUO_END, outline);
+			Auo_editor(editorentry, AUO_EDCURSHOW, &curline); 
+			Auo_editor(editorentry, AUO_UPDATE, &curline); 
+
+			cnt = 0;
+			return;
+			}
+
+		outline[cnt++] = c;
+
+		if( c == 8 ) cnt-=2;
+		}
+}
+
+
+long cdecl emit_quest (void)
+/* Unkown type of routine */
+{
+	return -1L;
+
+}
+
+
+static void handle_caps (void)
+/* Click routine */
+{
+static long lastcaps = -1L;
+static int cursor;
+
+	if( (Kbshift(-1)&0x10L) != lastcaps )
+		{
+		lastcaps = Kbshift(-1)&0x10L;
+		Auo_editor(editorentry, AUO_EDCURHIDE, &cursor); 
+		if( lastcaps )
+			{
+/*			Awi_obchange( action, CAPSINDICATOR, SELECTED);  */
+			cursor = 2; /* Block */
+			Auo_editor(editorentry, AUO_EDCURSOR, &cursor); 
+			}
+		else
+			{
+/*			Awi_obchange( action, CAPSINDICATOR, 0); */
+			cursor = 3; /* Block */
+			Auo_editor(editorentry, AUO_EDCURSOR, &cursor); 
+			} 
+		Auo_editor(editorentry, AUO_EDCURSHOW, &cursor); 
+		Auo_editor(editorentry, AUO_EDUPDATE, &cursor);	
+		}
+
+
+}
+
+static void ins_load_fromclip (void)
+/* Click routine */
+/*
+ * When cursor is on last line of the interpreter window,
+ * get clipboard and send it to Forth.
+ * Otherwise, simply include it to the buffer.
+ */
+{
+
+	long rows;
+	long isrow;
+
+	Auo_editor(editorentry,AUO_EDGETROWS,&rows);
+	Auo_editor(editorentry,AUO_EDGETPOS,&isrow);
+
+ 	if( rows-1 != isrow )  /* not in last line */
+ 		{
+		Aed_fromclip();
+		Auo_editor(editorentry,AUO_EDRESET,&rows);
+		return;
+		}
+	else
+		{
+		doloadscrap();
+		}
+}
+
+
+void insert_char (INT16 key)
+/* wi-> keys routine */
+{
+int i;
+static char *inline, outline[256];
+long pos;
+int len;
+
+	key &= 0xff;
+
+/*	if( key == 0xd )
+		Auok_editor(editorentry, 0, key);
+*/
+	Auo_editor(editorentry, AUO_EDCURHIDE, &inline);
+	Auo_editor(editorentry, AUO_GETVAL, &inline);
+
+	Auo_editor(editorentry, AUO_EDGETCURPOS, &pos); 
+
+	len = (int)pos;
+	if( (key == 8) && (len>0))	len--;
+
+	outline[0] = '\0';
+	strncpy(outline,inline,len);
+
+	outline[len] = (char)key;
+
+	if( key == 8 ) len--;
+
+	outline[(int)len+1] = '\0';
+	strcat(outline, &inline[(int)pos]);
+
+	Auo_editor(editorentry, AUO_SETVAL, outline);
+
+	pos = len+1;
+	Auo_editor(editorentry, AUO_EDCURPOS, &pos); 
+
+	Auo_editor(editorentry, AUO_EDCURSHOW, &inline); 
+	Auo_editor(editorentry, AUO_UPDATE, &inline); 
+
+}
+
+
+long cdecl key (void)
+/* Unkown type of routine */
+{
+int val;
+
+	if( cbufcnt )
+		{
+		cbufcnt--;
+		val = outcbuf++;
+		outcbuf %= 1024;
+		return (long)cbuf[val];
+		}
+
+	val = setjmp(jmp_toKEY);
+	if( val == 0 )
+		longjmp(jmp_fromKEY,-1);
+
+	return (long)(val&0xff);
+
+}
+
+
+long cdecl key_quest (void)
+/* Unkown type of routine */
+{
+int val;
+
+/* JPS949425, wenn noch Zeichen im Buffer, KEY?=TRUE */
+	if( cbufcnt )
+		return -1L;
+	
+
+/*
+	skip 31 calls of KEY?
+*/
+	keyqcnt++;
+	if( keyqcnt %= 32) 
+		return 0L;
+
+		
+
+	keyqmode = 1;
+	val = setjmp(jmp_toKEY);
+	if( val == 0 )
+		longjmp(jmp_fromKEY,-1);
+	
+	if( val == 1 )
+		return 0L;
+	else
+		return -1L;
+
+}
+
+
+
+/********************************************************************
+
+	Loader program for a F68K image file
+	
+	
+	This loader tries to open a file F68K.CFG which
+	holds information about the F68K system to be loaded.
+	
+	
+********************************************************************/
+/*#define DEBUG
+*/
+
+ 
+ 
+#define CODESIZE 0x20000L
+#define DATASIZE 0x20000L
+#define TIBSIZE  10240
+#define MAX_DEVICES 10
+#define BPB  2048                 /* Bytes Per Block */
+
+#define FALSE (0)
+#define TRUE (-1)
+
+#define CONSOLE 2
+
+#define fsize(x) Fseek(0L,fileno(x),2)
+
+
+
+
+/*
+ * declaration of internal functions
+ */
+void read_paras(void);
+void read_segments(void**,void**);
+
+
+/*
+ * some globals
+ */
+long codesz = CODESIZE;
+long datasz = DATASIZE; 
+char imagename[FILENAME_MAX] = "F68KANS.IMG";
+char cfgname[FILENAME_MAX] = "F68KANS.CFG";
+
+FORTHPARAS forthparas;
+
+SI_group SIG[5];
+
+
+/*
+ * main
+ */
+void load_f68k (void)
+{
+void *codeseg,*dataseg;
+
+
+	/*
+	 * initialisation of system interface
+	 */
+	strcpy(SIG[0].SI_id, "BIOS");
+	SIG[0].SI_fa = SI_BIOS_fa;
+
+	strcpy(SIG[1].SI_id, "CLIB");
+	SIG[1].SI_fa = SI_CLIB_fa;
+
+	strcpy(SIG[2].SI_id, "FLOT");
+	SIG[2].SI_fa = SI_FLOT_fa;
+
+	strcpy(SIG[3].SI_id, "PBGI");
+	SIG[3].SI_fa = SI_PBGI_fa;
+
+	strcpy(SIG[4].SI_id, "PLOT");
+	SIG[4].SI_fa = SI_PLOT_fa;
+
+	strcpy(SIG[5].SI_id, "    ");
+	SIG[5].SI_fa = NULL;
+
+
+/*	wprintf(protocol,"Bin in load_f68k() angekommen!\n");
+*/
+
+	forthparas.si		= SIG;
+
+    read_paras();
+
+/*	wprintf(protocol,"read_paras() Åberstanden!\n");
+*/
+
+    forthparas.codelen	= codesz;
+    forthparas.datalen	= datasz; 
+       
+    read_segments(&codeseg,&dataseg);
+    forthparas.code		= codeseg;
+    forthparas.data		= dataseg;
+    forthparas.datastack= (void*)((long)dataseg+datasz-TIBSIZE);
+    forthparas.retstack	= (void*)((long)dataseg+datasz);
+    forthparas.TIBptr	= (void*)((long)dataseg+datasz-TIBSIZE);
+        
+
+	if( setjmp(jmp_fromKEY) == 0 )
+		{
+/*	  	Super(0);   */
+		(*(FUNC*)codeseg)(&forthparas);
+	}
+
+	return;
+}
+
+
+
+/*
+ * read configuration file
+ */
+void read_paras()
+{
+FILE *paras;
+
+
+        if( (paras=fopen(cfgname,"r"))==NULL)  
+                {
+                fprintf(stderr,"*** F68K loader warning: configuration file F68KANS.CFG not found\n");
+                return;
+                }
+        if( !fscanf(paras,"image: %s%*d\n",imagename))
+                fprintf(stderr,"*** F68K loader warning: no imagefile given in F68KANS.CFG, suppose F68KANS.IMG\n");
+        if( !fscanf(paras,"code: 0x%lx%*d\n",&codesz))
+                fprintf(stderr,"*** F68K loader warning: no codesize given in F68KANS.CFG, suppose %ld\n",CODESIZE);
+        if( !fscanf(paras,"data: 0x%lx%*d\n",&datasz))
+                fprintf(stderr,"*** F68K loader warning: no datasize given in F68KANS.CFG, suppose %ld\n",DATASIZE);
+
+#ifdef DEBUG
+fprintf(stderr,"\n");
+#endif
+}
+
+
+void read_segments(codeseg,dataseg)
+void **codeseg, **dataseg;
+{       
+FILE *image;
+
+struct header
+{
+        int magic;
+        unsigned long codesize;
+        unsigned long datasize;
+        int dont_care[9];
+} header;
+
+
+        if( ((*codeseg = malloc(codesz)) == NULL) | 
+            ((*dataseg = malloc(datasz)) == NULL))   
+                {
+                fprintf(stderr,"*** F68K loader error:  segments allocation fault\n");
+                exit(-1);
+                }
+
+        if( (image=fopen(imagename,"rb")) == NULL )
+                {
+                fprintf(stderr,"*** F68K loader error:  image file not found\n");
+                exit(-1);
+                }
+        
+        if( read(fileno(image),&header,(long)sizeof(header)) != (long)sizeof(header))
+                {
+                fprintf(stderr,"*** F68K loader error:  image file read error (header)\n");
+                exit(-1);
+                }
+
+	if(header.magic != 'JP') 
+		{
+		fprintf(stderr,"*** F68K loader error:  this is not an F68K image\n");
+		exit(-1);
+		}
+
+        if( read(fileno(image), *codeseg, header.codesize) != header.codesize)
+                {
+                fprintf(stderr,"*** F68K loader error:  image file read error (code)\n");
+                exit(-1);
+                }
+        if( read(fileno(image), *dataseg, header.datasize) != header.datasize)
+                {
+                fprintf(stderr,"*** F68K loader error:  image file read error (data)\n");
+                exit(-1);
+                }
+}
+
+
+
+void loadselection (OBJECT* entry)
+{
+long sel[4];		/* Selektionsbereich */
+char *line;
+long sellineno;
+int iindex, findex;
+int key;
+
+	Auo_editor(entry, AUO_EDGETSELECT, sel); 
+	
+	if(sel[0] == -1) return;
+
+	Auo_editor(entry, AUO_EDUNSELECT, &sel); 
+
+	Auo_editor(entry, AUO_EDCURHIDE, &line); 
+
+	echo = set_echo;
+
+	for( sellineno = sel[0]; sellineno <= sel[2]; sellineno++)
+		{
+		Auo_editor(entry, AUO_POS, &sellineno); 
+		Auo_editor(entry, AUO_GETVAL, &line);
+/*		Auo_editor(editorentry, AUO_END, &line); */
+	
+		iindex = 0;
+		findex = strlen(line);
+		if(sellineno == sel[0]) iindex = sel[1];
+		if(sellineno == sel[2]) findex = sel[3];
+  
+		string_to_forth(&line[iindex], findex-iindex);
+
+		if(docr)
+			char_to_forth(13);
+		}
+
+
+	Auo_editor(entry, AUO_EDCURSHOW, &line); 
+	echo = -1;
+
+}
+
+
+static void m_toggle_docr (void)
+/* Click routine */
+{
+	if( docr ) 	docr = 0;
+	else 		docr = -1;
+
+	if( docr )
+		ev_object[ev_obnr].ob_state |= CHECKED;
+	else
+		ev_object[ev_obnr].ob_state &= !CHECKED;
+
+}
+
+
+static void m_toggle_echo (void)
+/* Click routine */
+{
+	if( set_echo ) 	set_echo = 0;
+	else 			set_echo = -1;
+
+	if( set_echo )
+		ev_object[ev_obnr].ob_state |= CHECKED;
+	else
+		ev_object[ev_obnr].ob_state &= !CHECKED;
+}
+
+
+static Awindow* make_about (void* para)
+/* wi-> create routine */
+{
+	Awindow* wi;
+
+	wi = Awi_create (&w_about);
+	if (wi == NULL) return NULL;
+	return wi;
+}
+
+
+static void startupstream (void)
+{
+int filenlen, button;
+char filen[256];
+char *fptr;
+FILE *file;
+int key;
+
+	file = fopen("startup.in", "r");
+	if( file == NULL ) return;
+
+	echo = set_echo;
+
+	key = getc(file);
+	while(key != EOF) 	
+		{
+		if( key == '\n' ) key = 13;  /* F68KANS reagiert nur auf 13! */
+		char_to_forth(key);
+		key = getc(file);
+		}
+
+	fclose(file);			
+
+	echo = -1;
+}
+
+
+
+void string_to_forth (char *s, int len)
+/* Unkown type of routine */
+{
+int i;
+
+	for(i=0;i<len;i++)
+		char_to_forth((int)s[i]);
+
+}
+
+
+void timer_nokey (void)
+/* Unkown type of routine */
+{
+	handle_caps();
+	
+	if( keyqmode )
+		{
+		keyqmode = 0;
+		char_to_forth(1);
+		}
+}
+
+

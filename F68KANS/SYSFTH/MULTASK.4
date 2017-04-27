@@ -1,0 +1,220 @@
+\
+\ the F68KANS multitasker
+\
+\
+
+\
+\ JPS940419
+\
+
+\ what a cooperative PAUSE has to do:
+\
+\ 1.)
+\ save registers: a6 (datastack), a7 (returnstack)
+\                 d6/d7 (DO..LOOP)
+\
+\ lea 0(a3,d5.l),a0
+\ movem.l a6-a7/d6-d7,-(a0) 
+\
+\
+\ 2.) 
+\ get pointer to next task (userarea)
+\
+\ move.l 0(a3,d5.l),d5
+\
+\
+\ 3.)
+\ restore registers
+\
+\ lea -16(a3,d5.l),a0
+\ movem.l (a0)+,a6-a7/d6-d7
+\
+
+
+WORDLIST CONSTANT tasker-wordlist
+tasker-wordlist vpush vswap
+GET-CURRENT tasker-wordlist SET-CURRENT
+
+
+
+
+HEX 
+
+: PAUSE
+[
+ 41F35800 	code,               \	lea 0(a3,d5.l),a0
+ 48E00303 	code,               \	movem.l a6-a7/d6-d7,-(a0) 
+ 2A335800 	code,               \	move.l 0(a3,d5.l),d5
+ 41F358F0 	code,               \	lea -16(a3,d5.l),a0
+ 4CD8C0C0 	code,               \	movem.l (a0)+,a6-a7/d6-d7
+]	;
+
+
+\
+\ creating a new task
+\
+\
+HEX
+0800 CONSTANT usize				\ size of USER area
+0400 CONSTANT dsize				\ size of data stack
+0400 CONSTANT rsize				\ size of returnstack
+0010 CONSTANT regsize			\ size of space for registers  
+nextuser CONSTANT bootuser		\ original USER area
+
+
+: allotuser ( -- addr-of-userarea )
+	regsize ALLOT					\ space to save registers
+	HERE usize ALLOT
+	;
+
+
+: allotstacks ( -- addr-rstack addr-dstack )
+	rsize ALLOT HERE
+	dsize ALLOT HERE		\ stack grow to lower addresses
+	;
+
+r0 nextuser - CONSTANT o_r0
+s0 nextuser - CONSTANT o_s0
+
+: 0!uarea ( addr-rstack addr-dstck addr-user -- )
+	>R
+	bootuser R@ usize CMOVE 
+	R@ o_s0 +  !				\ set base of datastack
+	R> o_r0 +  ! 				\ set base of returnstack
+	;
+
+
+: 0!rstack ( xt addr-rstack -- )
+	SWAP code>data >abs SWAP	\ calculate absolute codeaddress 
+	1 CELLS -   ! 				\ store in returnstack
+	;
+
+
+: 0!registers ( addr-rstack addr-dstack addr-user -- )
+	>R
+				>abs R@ 2 CELLS -  !
+	1 CELLS -   >abs R> 1 CELLS -  !
+	;
+
+
+: 3DUP ( a b c --  a b c a b c )
+	>R 2DUP R@ -rot R> 
+	;  
+
+: TASK 	( compile: xt -- )
+		( runtime: -- addr-task )
+	CREATE
+		allotuser
+		allotstacks		( xt addr-user addr-rstack addr-dstack )
+		OVER >R			\ save rstack
+		ROT 3DUP	
+		0!uarea   0!registers
+		R> 0!rstack
+	DOES> 
+		regsize +
+	;
+
+: ?awake ( task -- t/f)
+	>R 0 nextuser
+	BEGIN 
+		DUP R@ = DUP	( 0 nextuser flag flag ) 
+		IF >R >R DROP TRUE R> R> THEN  0=
+	WHILE           
+		@ DUP nextuser = 
+	UNTIL THEN
+	DROP  R> DROP ; 
+
+
+: WAKE ( addr-task -- )
+	DUP ?awake
+	IF 	DROP
+	ELSE
+		nextuser @  OVER ! 
+		nextuser !
+	THEN
+	;
+
+: SLEEP ( addr-task -- )
+	DUP ?awake
+	IF
+		>R nextuser
+		BEGIN  DUP @ R@ = 0= 
+		WHILE  @ 
+		REPEAT
+		R> @ SWAP !
+	ELSE DROP THEN 
+	;	
+
+
+: STOP ( -- )
+	nextuser SLEEP PAUSE 
+	;	
+
+
+
+\
+\ patch I/O
+\
+VARIABLE BGPRIORITY
+8 BGPRIORITY !
+
+: multiKEY ( -- char )
+        BEGIN 
+			BGPRIORITY @ 0  ?DO  PAUSE  LOOP 
+			KEY? 
+		UNTIL
+        [ (key) @ ] LITERAL EXECUTE  ;
+
+: multiEMIT ( char -- ) 
+        [ (emit) @ ] LITERAL EXECUTE  
+		BGPRIORITY @ 0  ?DO  PAUSE  LOOP ;
+
+
+
+' multiKEY (key) !
+' multiEMIT (emit) !
+
+
+
+\
+\
+\ install and uninstall the tasker
+\
+\
+VARIABLE savepausecode
+' PAUSE code>data w@ savepausecode !
+
+: SINGLETASK ( -- )
+	4E75 ( rts ) ['] PAUSE code>data w! 
+	;
+
+: MULTITASK ( -- )
+	savepausecode @  ['] PAUSE code>data w! 
+	;
+
+SINGLETASK
+
+DECIMAL
+
+SET-CURRENT ( restore )
+
+
+
+\ \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\ test
+\
+\
+\ VARIABLE COUNTER
+\ 
+\ 0 COUNTER !
+\
+\ : TESTTASK
+\ 	BEGIN 1 COUNTER +!  PAUSE  
+\ 	AGAIN ;
+\
+\ ' TESTTASK TASK TTASK
+\ MULTITASK
+\ TTASK WAKE
+\
+
+

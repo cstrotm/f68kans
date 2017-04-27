@@ -1,0 +1,22 @@
+Differences between Release 3 and Release 4
+
+Gray has been adapted to ANS Forth; it no longer runs on Tile.
+Semantic parsing conditions have been added (graycond.fs). The example
+program calc uses WORD (instead of KEY) for getting input; mini uses
+the file wordset (instead of KEY) for input. Gray is now licensed
+under the terms of the GNU General Public License.
+
+Differences between Release 2 and Release 3
+
+Gray runs now on Tile Release 2.1. It uses Tile's new "source" and
+"line" words for displaying error locations. Therefore it does not
+work on Release 1 of Tile.
+Some portability bugs have been removed.
+
+Differences between Release 1 and Release 2
+
+Gray now runs on computers with memory alignment restrictions, too.
+Tile Release 2 is now supported, it needs porting to run on Tile
+Release 1.
+Changed "(compile)" into "compile," (ANSI).
+No bugs were reported. Therefore they are still there.

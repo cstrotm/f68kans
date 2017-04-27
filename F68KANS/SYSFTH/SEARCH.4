@@ -1,0 +1,148 @@
+( Definition of words for )
+( the search-order wordset )
+
+( JPS, 13mar93 )
+
+( JPS300894: SEARCH-WORDLIST added )
+( JPS950118: ALIGN in WORDLIST added )
+( JPS950205: vpush, vswap and vdrop added )
+( JPS950205: hidden-wordlist introduced )
+
+
+
+( FORTH-WORDLIST is already defined in the kernel )
+( SEARCH-WORDLIST is already defined in the kernel ) ( stimmt nicht )
+
+DECIMAL
+CREATE srch-wlbuf 64 ALLOT
+
+: SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
+	>R  
+	( change c-addr u to a counted string in srch-wlbuf )
+    SWAP OVER  srch-wlbuf 1+ SWAP CMOVE
+	srch-wlbuf C! 	
+	srch-wlbuf R> vocsearch  	( do the search )  ( xt 1 | xt -1 | str 0 )
+	DUP 0= IF NIP THEN 
+	;
+
+
+: DEFINITIONS ( -- )
+	vocpa @ DUP @ + @ current ! ;
+	
+	
+: GET-CURRENT ( -- wid )
+	current @ ;
+	
+: GET-ORDER ( -- wid1 ... widn n )
+	vocpa @ DUP 
+	@ 4 / DUP >R
+	0 DO
+		CELL+ DUP @ SWAP
+	LOOP
+	DROP ( addr )
+	R> ;
+	
+
+: SET-CURRENT ( wid -- )
+	current ! ;
+	
+: SET-ORDER ( wid1 ... widn n -- )
+	DUP >R				( save n )
+	4 * vocpa @ !		( save height of vocstack )
+	R> 0 
+	DO
+		vocpa @ DUP @ +
+		I CELLS -  !
+	LOOP ; 
+
+ALIGN HERE 0 , 0 , CONSTANT emptyheader 
+
+: WORDLIST ( -- wid )
+	ALIGN HERE  emptyheader , ;
+
+\
+\ extensions
+\
+
+: ALSO  ( -- ) 
+	GET-ORDER OVER SWAP 1+ SET-ORDER ;
+
+: PREVIOUS ( -- )
+	GET-ORDER NIP 1- SET-ORDER ;
+
+: FORTH ( -- )
+	GET-ORDER NIP FORTH-WORDLIST SWAP SET-ORDER ;
+
+
+WORDLIST CONSTANT ROOT
+
+GET-CURRENT ROOT SET-CURRENT 
+
+FORTH-WORDLIST CONSTANT FORTH-WORDLIST
+
+: SET-ORDER SET-ORDER ;
+
+SET-CURRENT
+
+
+: ONLY ( -- )
+	ROOT ROOT 2 SET-ORDER ;
+
+
+: ORDER ( -- ) 
+	CR ." Order: " GET-ORDER 0  
+	DO  .  LOOP 
+	CR ." Current: " GET-CURRENT .  
+	;
+
+S" SEARCH-ORDER" 				TRUE 	1 SET-ENVIRONMENT
+S" SEARCH-ORDER-EXT" 			TRUE 	1 SET-ENVIRONMENT
+S" WORDLISTS" 					20 		1 SET-ENVIRONMENT
+	 
+
+\
+\
+\ things of common use
+\
+\
+
+: do-vocabulary ( -- ) 
+	DOES> @ >R
+		GET-ORDER NIP
+		R> SWAP SET-ORDER 
+	;
+
+: VOCABULARY ( <name> -- )
+	WORDLIST CREATE ,  do-vocabulary
+	;
+
+
+: discard ( x1 .... xu u -- )
+	0 ?DO DROP LOOP ;
+
+: SEAL ( -- )
+	GET-ORDER OVER 1 SET-ORDER discard ; 
+
+
+: vpush ( wid -- )
+	>R GET-ORDER R> SWAP 1+
+	SET-ORDER ;
+
+: vswap ( -- )
+	GET-ORDER >R SWAP R>
+	SET-ORDER ;
+  
+: vdrop ( -- )
+	GET-ORDER 1- NIP
+	SET-ORDER ;
+
+
+WORDLIST CONSTANT hidden-wordlist
+hidden-wordlist vpush vswap 
+
+
+
+
+
+
+

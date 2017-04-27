@@ -1,0 +1,551 @@
+( CORE words in hight level )
+( JPS, 14mar1993            )
+
+( JPS940814: WITHIN added )
+( JPS940904: [COMPILE] added )
+( JPS940910: C" added )
+( JPS940918: U> added )
+( JPS941222: CONSTANT moved from kernel to CORE.4 )
+( JPS941222: VARIABLE moved from kernel to CORE.4 )
+( JPS941223: Conditionals changed for new kernel routines )
+(             using relativ 16-bit jumps )
+( JPS950205: ALIGN added to MARKER )
+( JPS950206: MARKER now saves and restores 'current @ @' )
+( JPS950801: S" moved from kernel to CORE.4 )
+
+1 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ BASE !   ( set to DECIMAL )
+
+( returnstack operations ) 
+16 BASE !
+
+: >R ( n -- )
+	2F1E codew, ;	IMMEDIATE restrict		( move.l [a6]+,-[a7] ) 
+: R> ( -- n )
+	2D1F codew, ;	IMMEDIATE restrict		( move.l [a7]+,-[a6] )
+: R@ ( -- n )
+	2D17 codew, ;	IMMEDIATE restrict		( move.l [a7],-[a6] )
+
+A BASE ! 
+
+
+: S>D ( n -- d )										( CORE)
+	DUP 0< ;
+( S>D uses the fact, that 0< returns a -1 as TRUE-flag! ) 	
+
+: /MOD  >R S>D R> SM/REM ;
+m: /     /MOD NIP ; 
+( : MOD   /MOD DROP ; )
+: */MOD >R M* R> SM/REM ;
+m: */    */MOD NIP ;
+
+
+
+
+
+: DECIMAL ( -- )										( CORE)
+	10 BASE ! ;
+
+: DEPTH	( -- n )										( CORE)
+	s0 @ sp@ - 1 CELLS / 1 - ;
+
+
+: ALIGNED ( addr -- a-addr )							( CORE)
+	DUP 1 AND + ;
+
+
+: >BODY ( xt -- a-addr )								( CORE)
+	CELL+ CELL+  code>data @ ;
+
+
+( CONSTANT VARIABLE )
+: CONSTANT ( n <name> -- ) 								( CORE)
+	>R m: R> POSTPONE LITERAL POSTPONE ; ;
+
+: VARIABLE ( <name> -- )
+	ALIGN HERE 0 , CONSTANT ;							( CORE)
+
+
+( 2@ 2!  )
+: 2! ( d a-addr -- ) 
+	DUP >R !
+	R> CELL+ ! 
+	;
+
+: 2@ ( a-addr -- d )
+	DUP @ >R
+        CELL+ @ R>
+        ;
+
+(									)
+( controls							)
+(									)
+
+: >mark 
+	cp @
+	0000 codew,
+; restrict
+
+: >resolve
+	DUP  
+	cp @ SWAP -
+	SWAP code>data w! 
+; restrict   
+
+
+: <mark
+	cp @
+;  restrict
+
+: <resolve
+	cp @ - codew, 
+; restrict
+
+
+: BEGIN 
+	<mark
+;  IMMEDIATE restrict
+
+
+: UNTIL
+	POSTPONE ?branch
+	<resolve
+;  IMMEDIATE restrict
+
+
+: AGAIN
+	POSTPONE branch
+	<resolve
+;  IMMEDIATE restrict
+
+
+: REPEAT
+	POSTPONE branch
+	<resolve
+	>resolve
+;  IMMEDIATE restrict
+
+
+: WHILE
+	POSTPONE ?branch
+	>mark SWAP
+;  IMMEDIATE restrict
+
+
+: IF 
+	POSTPONE ?branch 
+	>mark 
+;  IMMEDIATE restrict
+
+
+: THEN
+	>resolve
+;  IMMEDIATE restrict
+
+
+: ELSE
+	POSTPONE branch 
+	>mark SWAP
+	>resolve
+;  IMMEDIATE restrict
+
+
+: DO
+	['] (do	jsrsb,
+	>mark
+;  IMMEDIATE restrict
+
+
+: LOOP
+	['] (loop	jsrsb,
+	>resolve
+;  IMMEDIATE restrict
+
+
+: ?DO
+	['] (?do	jsrsb,
+	>mark
+;  IMMEDIATE restrict
+
+
+: +LOOP
+	['] (+loop	jsrsb,
+	>resolve
+;  IMMEDIATE restrict
+
+
+
+(								)
+( moving memory					)
+(								)
+: MOVE ( addr1 addr2 u -- )								( CORE)
+	>R 2DUP < 
+	IF		R> CMOVE>
+	ELSE	R> CMOVE
+	THEN
+	;
+
+
+( ################# )	
+( formating numbers )
+( ################# )
+DECIMAL
+
+256 ALLOT HERE CONSTANT hldbuffer
+VARIABLE hld
+hldbuffer hld !		( initialisation )
+
+: <# 	( -- )											( CORE)
+	hldbuffer hld ! ;
+
+
+
+: #> 	( xd -- c-addr u )								( CORE)
+	2DROP  hld @ 
+	hldbuffer OVER - ;
+	
+: HOLD ( char -- )										( CORE)
+	-1 hld +!
+	hld @ C! ;
+
+: SIGN 	( n -- )										( CORE)
+	0< IF  [CHAR] - HOLD  THEN ;
+	
+
+: ud/mod ( d n -- d/n dmodn )
+	>R 0 R@  UM/MOD  
+	R>  SWAP  >R				( R: d-higth/n )	
+	UM/MOD  SWAP 
+	R> SWAP  ;
+	
+: # 	( ud1 -- ud2 )									( CORE)
+	BASE @ ud/mod ( SWAP )	
+	DUP 9 > IF [ CHAR A CHAR 9  - 1 - ] LITERAL + THEN
+	[CHAR] 0 +  HOLD ;
+
+: #S 	( ud1 -- ud2 )									( CORE)
+	BEGIN  #  2DUP OR 0= UNTIL ;
+
+: U. 	( u -- ) 										( CORE)
+	0 <# #S #> TYPE SPACE ;
+
+
+
+: . 	( n -- )										( CORE)
+	DUP >R ABS
+	DUP 0< IF 0 ELSE S>D THEN
+( this line is for the case that n = -$8000000 = ABS(-$8000000)
+ 	<# #S R> SIGN #>  TYPE SPACE ;  
+
+
+
+
+: SPACES ( n -- ) 										( CORE)
+	DUP NEGATE 0< 
+	IF 	 	0 DO SPACE LOOP
+	ELSE 	DROP	
+	THEN ;
+		
+
+( ################ )
+( allow recursions )
+( ################ )
+: RECURSE ( -- )										( CORE)
+	last @ @ COMPILE, ; 	IMMEDIATE 
+
+
+
+(                              )
+( CORE EXT words in high level )
+( JPS, 14mar1993               )
+(                              )
+
+DECIMAL 
+: HEX ( -- )											( CORE EXT)
+	16 BASE ! ;
+
+: .R    ( n count -- )	 								( CORE EXT )
+    >R DUP >R ABS  <# S>D #S R> SIGN #>
+    R> OVER - ( 0 MAX )  SPACES  TYPE ;
+    
+    
+-1 CONSTANT TRUE										( CORE EXT )
+0 CONSTANT FALSE										( CORE EXT )
+
+
+: \ ( "ccc<eol>" -- )									( CORE EXT ) 
+	SOURCE >IN ! DROP ;
+IMMEDIATE
+
+    
+\
+\ Implementation of WITHIN
+\ taken from dpANS6
+\
+
+\ : WITHIN ( test low high -- flag )					( CORE EXT)
+\	>R OVER < 0= ( test flag ) 
+\	SWAP R> < AND ;
+
+\ 2-complement
+
+: WITHIN ( test low high -- flag )						( CORE EXT)
+	OVER - >R - R> U< ;
+
+
+\
+\ [COMPILE]
+\
+: [COMPILE] 
+	POSTPONE POSTPONE
+	; IMMEDIATE
+
+    
+\
+\ PICK and ROLL
+\
+: PICK ( n -- n1 ) 										( CORE EXT)
+	1+ CELLS sp@ + @ ;
+
+: ROLL ( n -- ) 										( CORE EXT)
+	DUP 1+ PICK >R
+	CELLS >R 
+	sp@ DUP CELL+ R> CMOVE>
+	DROP R> 
+	;
+
+
+\
+\ C" S" 
+\
+: C" ( <string>" -- ) \ Runtime: ( -- c-addr ) 
+	STATE @ IF
+		POSTPONE (s") ALIGN HERE code, 
+		,"  
+		POSTPONE DROP
+		POSTPONE 1- 
+	ELSE
+		[CHAR] " WORD  
+  		DUP C@ PAD SWAP 1+ CMOVE 
+		PAD
+	THEN 
+	;  IMMEDIATE
+
+
+: S" ( <string>" -- ) \ Runtime: ( -- addr u )  
+	STATE @ IF
+		POSTPONE (s") ALIGN HERE code,  ,"  
+	ELSE
+		[CHAR] " WORD  
+  		DUP C@ PAD SWAP 1+ CMOVE 
+		PAD COUNT
+	THEN 
+	;  IMMEDIATE
+
+
+
+
+
+
+\
+\ SAVE-INPUT, RESTORE-INPUT and EVALUATE
+\    
+    
+: SAVE-INPUT ( -- x1 ... xn n )							( CORE EXT )
+	>source-id @	>IN @
+	>TIB @			#TIB @
+	>evaluate-ib @	#evaluate-ib @
+	>file-ib @		#file-ib @
+	BLK @ 			9 
+	;
+	
+
+: RESTORE-INPUT ( x1 ... xn n -- )						( CORE EXT )
+	DROP
+	BLK !
+	#file-ib !		>file-ib !
+	#evaluate-ib !	>evaluate-ib !
+	#TIB !			>TIB !
+	>IN !			>source-id ! 
+	;
+	
+
+: EVALUATE ( i*x c-addr u -- j*x )						( CORE )
+	SAVE-INPUT 	DUP 
+	BEGIN  DUP  WHILE  1- ROT >R  REPEAT DROP  >R
+	#evaluate-ib ! 		>evaluate-ib !	
+	-1 >source-id !	 	0 >IN !
+	['] interpret CATCH
+	R> DUP  BEGIN  DUP  WHILE  1- R> ROT ROT  REPEAT
+ 	DROP RESTORE-INPUT
+  	THROW  
+ 	; 
+
+
+
+
+: nonameheader ( -- last-value )
+	 [ last @ ] LITERAL ;
+
+\ nonameheader is used for the ; after :NONAME as a default header,
+\ where ; can lay down some unused information
+
+
+: :NONAME ( C: -- colon-sys ) ( S: -- xt )				( CORE EXT )		
+\ colon-sys is nothing    
+	nonameheader last !
+	codeheadsize cp +!
+	cp @  nonameheader  !
+	cp @ ] ;
+	
+
+
+
+
+( *************************************** )
+( *   CASE-STRUKTUR                     * )
+( *************************************** )
+
+: CASE
+	0 
+	; IMMEDIATE
+
+: OF     
+	1+
+	POSTPONE OVER  POSTPONE =  POSTPONE ?branch >mark
+    POSTPONE DROP 
+    ; IMMEDIATE
+
+: ENDOF
+	POSTPONE branch >mark SWAP >resolve SWAP 
+	; IMMEDIATE
+
+
+: ENDCASE													( CORE EXT)
+	POSTPONE DROP
+    0 DO >resolve LOOP
+	; IMMEDIATE
+
+
+
+\
+\ 
+\
+: MARKER ( "name" -- )										( CORE EXT)
+	ALIGN HERE
+		cp @ ,
+		dp @ , 
+		current @ DUP , @ ,
+		vocpa @ @ 2 RSHIFT DUP ,  0 
+		?DO
+			vocpa @ I 1+ CELLS + @ DUP ,  @ ,
+		LOOP 
+	CREATE 	,
+	DOES>
+		@ 
+		DUP @  cp !
+		CELL+ DUP @ dp !
+		CELL+ DUP @ current !
+		CELL+ DUP @ current @ ! 
+		CELL+ DUP @ DUP 
+		2 LSHIFT vocpa @ !  
+		0 
+		?DO	
+			CELL+  DUP @  DUP >R  
+			vocpa @ I 1+ CELLS + !
+			CELL+ DUP @  R> ! 
+		LOOP 
+		DROP ;
+
+
+
+
+\
+\ ENVIRONMENT?
+\
+    
+m: <>		= 0= ;										( CORE EXT)
+m: 0>		NEGATE 0< ;									( CORE EXT)
+m: 0<>		0= 0= ; 									( CORE EXT)
+m: U>		SWAP U< ;									( CORE EXT)
+
+
+: $CMP ( c-addr1 u1 c-addr2 u2 -- flag )
+	>R OVER R> <>					( equal length? )  
+	IF  	2DROP DROP  FALSE
+	ELSE
+			SWAP 0
+			DO
+				DUP I +  C@ >R 
+				OVER I + C@ R>		( c-addr1 c-addr2 c1 c2 )
+				<> IF  2DROP FALSE UNLOOP EXIT THEN 
+			LOOP
+			2DROP TRUE
+	THEN ;
+
+
+
+\
+\ The environment strings are held in an linked list
+\ The start of that list is in the variable ENVLINK
+\
+
+VARIABLE ENVLINK
+ALIGN HERE 0 , ENVLINK !
+
+: LAST-ENVIRONMENT ( list-addr -- next-list-addr )
+	ENVLINK @
+	BEGIN DUP @ WHILE @ REPEAT 
+	;
+
+
+: SET-ENVIRONMENT  ( c-addr u i*value i -- )
+	ALIGN HERE LAST-ENVIRONMENT ! 
+	0 , DUP ,   0 ?DO , LOOP    DUP C,  
+	HERE SWAP DUP ALLOT  
+	MOVE 
+	;
+\
+\ If i is greater than one, i*value should be in reverse
+\ order on the stack! 
+\
+
+
+
+: ENVIRONMENT? ( c-addr u -- false | i*x true ) 			( CORE)
+	>R >R 
+	ENVLINK @ @
+	BEGIN
+		DUP 
+	WHILE
+		DUP CELL+ DUP @ 1+ CELLS + COUNT 		
+		R> R> 2DUP >R >R 	$CMP
+		IF 
+			R> R> 2DROP
+			CELL+ DUP @ CELLS OVER + SWAP    
+			DO  I CELL+ @  1 CELLS +LOOP 
+			TRUE  EXIT
+		THEN
+		@
+	REPEAT 
+	R> R> 2DROP DROP FALSE ;
+
+
+S" CORE" 				TRUE 	1 SET-ENVIRONMENT
+S" CORE-EXT" 			TRUE 	1 SET-ENVIRONMENT
+S" /HOLD" 				256 	1 SET-ENVIRONMENT
+S" /PAD"				10240	1 SET-ENVIRONMENT
+S" ADDRESS-UNIT-BITS"	8		1 SET-ENVIRONMENT
+S" /COUNTED-STRING"		256		1 SET-ENVIRONMENT
+S" FLOORED"				TRUE	1 SET-ENVIRONMENT
+S" MAX-CHAR"			127		1 SET-ENVIRONMENT
+HEX
+S" MAX-D"	7FFFFFFF FFFFFFFF	2 SET-ENVIRONMENT  			
+S" MAX-N"			7FFFFFFF 	1 SET-ENVIRONMENT  			
+S" MAX-U"			FFFFFFFF 	1 SET-ENVIRONMENT  			
+S" MAX-UD"	FFFFFFFF FFFFFFFF	2 SET-ENVIRONMENT  			
+DECIMAL
+S" RETURN-STACK-CELLS" 	1024	1 SET-ENVIRONMENT
+S" STACK-CELLS"			1024	1 SET-ENVIRONMENT
+
+S" EXCEPTION"			TRUE 	1 SET-ENVIRONMENT
+S" EXCEPTION-EXT" 		TRUE 	1 SET-ENVIRONMENT

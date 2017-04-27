@@ -1,0 +1,106 @@
+From willett!dwp@vax.cs.pitt.edu Wed Jan 26 02:42:39 1994
+Return-Path: <willett!dwp@vax.cs.pitt.edu>
+Received: from vax.cs.pitt.edu by ks.mpi-dortmund.mpg.de (4.1/SMI-4.1MHS-mpi-1.4.93)
+	id AA13400; Wed, 26 Jan 94 02:42:30 +0100
+Received: from willett.UUCP by vax.cs.pitt.edu (5.65/1.14)
+	id AA16582; Tue, 25 Jan 94 20:30:36 -0500
+Date: Tue, 25 Jan 94 06:53:38 EDT
+From: dwp@willett.pgh.pa.us (Doug Philips)
+Subject: Part 1 of 1 of POSTPONS.TXT
+Message-Id: <9401250653.0.UUL1.3#5129@willett.pgh.pa.us>
+To: plewe@mpi-dortmund.mpg.de
+Content-Length: 3439
+X-Lines: 90
+Status: RO
+
+}
+Here is Standard code that lets you POSTPONE multiple commands
+without typing POSTPONE in front of each of them.
+{
+: POSTPONE# POSTPONE LITERAL ;
+
+: ]]            BEGIN
+( )              >IN @ BL WORD DUP C@ WHILE
+( >in ca )       DUP COUNT S" [[" COMPARE WHILE
+( >in ca )        FIND IF
+( >in xt )         DROP >IN ! POSTPONE POSTPONE ELSE
+( >in ca )         0 0 ROT COUNT >NUMBER ABORT" can't ]]"
+( >in d ca)        2DROP POSTPONE# POSTPONE POSTPONE# DROP THEN
+                REPEAT
+( >in ca )      THEN 2DROP ; IMMEDIATE
+}
+
+This has the following environmental dependencies:
+
+It will not handle double or floating point numbers.
+
+COMPARE is required by the String wordset, and will not be
+present in every system.
+
+In some systems FIND may not find compile-only commands, and in
+some systems it may find interpreted commands with the same
+names which have different actions.  In the one case you get an
+error message, while in the other you get a bug.  So this is
+only 100% portable among systems in which, while compiling,
+FIND finds the execution token for the compilation behavior --
+the same behavior that POSTPONE postpones.
+
+Some minimal systems may make the block buffer invalid when you
+do any parsing operation.  ( LOAD will take care of that for
+itself, but when _you_ do it you're on your own.)  ]] does WORD
+which parses.  So ]] is not portable to those minimal systems.
+
+
+This is used in the following form:
+
+: LOOP ]] 1 +LOOP [[ ; IMMEDIATE
+
+When you do LOOP inside a definition, the 1 gets compiled as a
+literal and +LOOP gets executed.
+
+You can use this for macros -- lists of commands that all get
+postponed -- without having to type POSTPONE in front of each
+of them.  The code is as long as if you did type POSTPONE in
+front of each of them, though, and POSTPONE LITERAL after each
+number.
+
+I use such macros to make it easier to type sophisticated
+control structures.  The usual methods don't work to debug such
+things, so I try to keep them simple -- if there's any error
+they lose me time.  Here is a simple example:
+
+: ?EXIT ( f -- ) ]] IF EXIT THEN [[ ; IMMEDIATE
+
+You can't portably do R> DROP in a Standard program.  There's
+no guarantee that popping the return stack will have the result
+of skipping out of the next nested command.  This is a
+limitation on programs which allows much greater flexibility in
+systems.  Well, but how can a command slip out of the command
+that called it?  It can return a flag, and the outer command
+does EXIT.  It's clumsy, but it works.  And ?EXIT keeps me from
+having to write IF EXIT THEN each time, I can just type ?EXIT .
+And ]] keeps me from having to type POSTPONE three times.
+
+I don't know whether ]] is worth using.  Maybe the code it
+produces is harder to debug and harder to maintain.  But if it
+is worth using, almost every standard compiler that has COMPARE
+can handle it.  It's portable.
+
+: POSTPONE# POSTPONE LITERAL ;
+
+: [[ ABORT" [[ used without ]] " ; IMMEDIATE
+: ]]            BEGIN
+( )              >IN @ BL WORD DUP C@ WHILE
+( >in ca )        FIND IF
+( >in xt )         ['] [[ = IF DROP EXIT ELSE
+( >in )             >IN ! POSTPONE POSTPONE THEN
+                  ELSE
+( >in ca )         0 0 ROT COUNT >NUMBER ABORT" can't ]]"
+( >in d ca)        DROP POSTPONE# POSTPONE POSTPONE# DROP THEN
+                REPEAT
+( >in ca )      2DROP ; IMMEDIATE
+
+Come to think of it, something like this code should work,
+without the COMPARE .  Someday I'll debug it.
+
+

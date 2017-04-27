@@ -1,0 +1,63 @@
+\
+\ the STRING wordset
+\
+\ JPS, 28jan94
+\
+\ JPS940903: /STRING modified, to avoid S" " 1 /STRING . ==> -1 trouble
+\
+
+: -TRAILING ( c-addr u1 -- c-addr u2 )
+	DUP 0 
+	?DO 
+		1- 2DUP  + 
+		C@ BL <> IF 1+ LEAVE THEN 
+	LOOP ;
+
+
+: /STRING ( c-addr1 u1 n -- c-addr2 u2 )
+	DUP 0< 0= >R
+	2DUP U< R> AND					( JPS940903: introduced condition )
+	IF 
+		DROP + 0 EXIT
+	ELSE
+		DUP >R - SWAP R> + SWAP
+	THEN ;
+
+
+m: BLANK ( c-addr u -- )
+	BL FILL ;
+
+
+\
+\ COMPARE and SEARCH are using standard C-functions
+\ provided by the loader
+\
+
+m: COMPARE ( c-addr1 u1 c-addr2 u2 -- n )
+	_strcmp  ;
+
+: SEARCH ( c-addr1 u1 c-addr2 u2 -- c-addr3 u3 flag )
+	2OVER >R >R 
+	_strstr DUP 0<
+	IF	\ not found
+		DROP R> R> 0
+	ELSE
+		R> R> ROT /STRING TRUE
+	THEN ;
+
+
+: SLITERAL ( c-addr1 u -- )
+	POSTPONE (s")
+	HERE code,
+	DUP C,
+	HERE OVER 1+ ALLOT  
+	SWAP CMOVE 
+	;  IMMEDIATE
+
+
+\ Environment
+S" STRING" 				TRUE 	1 SET-ENVIRONMENT
+S" STRING-EXT" 			TRUE 	1 SET-ENVIRONMENT
+
+
+

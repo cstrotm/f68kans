@@ -1,0 +1,12 @@
+\ generates random numbers                             12jan94py
+BASE @ 
+
+VARIABLE SEED
+
+HEX 10450405 CONSTANT generator
+
+: RND  ( -- n )  SEED @ generator UM* DROP 1+ DUP SEED ! ;
+
+: RANDOM ( n -- 0..n-1 )  RND UM* NIP ;
+
+BASE !

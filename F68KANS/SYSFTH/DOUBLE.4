@@ -1,0 +1,149 @@
+\
+\
+\ DOUBLE numbers wordset
+\
+( JPS940920: D+ and D- added )
+( JPS940920: DU< added )
+( JPS950112: commented out M+. Already defined in kernel!! ) 
+( JPS950117: D< added )
+( JPS950403: M*/ added, taken from U.Hoffmann )
+
+WORDLIST CONSTANT double-wordlist
+double-wordlist vpush vswap
+GET-CURRENT double-wordlist SET-CURRENT
+
+
+
+: 2VARIABLE
+	CREATE 2 CELLS ALLOT ;
+
+\ : 2CONSTANT 
+\	CREATE SWAP , , 
+\	DOES> 2@ ;
+
+: 2CONSTANT ( d <name> -- )
+	m: POSTPONE 2LITERAL POSTPONE ; ;
+
+
+m: D>S ( d -- n ) 
+	DROP ;
+
+
+HEX
+: D+ ( d1 d2 -- d1+d2 )
+	[
+ 	4CDE codew,
+ 	000F codew,             \ movem.l (a6)+,d0-d3
+	D283 codew,             \ add.l d3,d1
+	2D01 codew,             \ move.l d1,-(a6)
+	D182 codew,             \ addx.l d2,d0
+	2D00 codew,             \ move.l d0,-(a6)
+	] ;
+	
+
+: D- ( d1 d2 -- d1-d2 )
+	[
+	4CDE codew,
+	000F codew,             \ movem.l (a6)+,d0-d3
+	9681 codew,             \ sub.l d1,d3
+	9580 codew,             \ subx.l d0,d2
+	2D03 codew,             \ move.l d3,-(a6)
+	2D02 codew,             \ move.l d2,-(a6)
+	] ;
+DECIMAL
+
+
+\ m: M+ ( d1|ud1 n -- d2|ud2 )
+\     S>D D+ ;
+
+
+: DU< ( ud1 ud2 -- flag )					( double ext)
+	ROT SWAP 2DUP U< IF 2DROP 2DROP TRUE EXIT THEN
+    = >R U< R> AND ; 
+	
+: D< ( d1 d2 -- flag )						( double) 
+	ROT SWAP 2DUP < IF 2DROP 2DROP TRUE EXIT THEN
+	= >R < R> AND ;
+
+
+: D. ( d -- )
+	DUP >R 
+	<# #S  R> SIGN #> TYPE SPACE ;
+
+: D.R ( d count -- )
+	>R DUP >R 
+	<# #S  R> SIGN #> 
+	R> OVER - SPACES 
+	TYPE SPACE ;
+
+
+
+: D= ( d1 d2 -- f ) 
+	SWAP >R = 
+	SWAP R> =
+	AND ;
+
+m: D0< ( d -- flag )
+	NIP 0< ;
+
+: D0= ( d -- flag )
+	0= SWAP 0= AND ;
+
+: D2* ( d -- d*2 )
+	OVER 0< 0= 1+           \ FLAG=0/-1!!   
+	SWAP 1 LSHIFT   OR
+	SWAP 1 LSHIFT   SWAP
+	;
+
+: D2/ ( d -- d/2 )
+	DUP 1 AND 31 LSHIFT
+	ROT 1 RSHIFT  OR
+	SWAP 1 RSHIFT
+	;
+
+: 2>R 
+	POSTPONE >R POSTPONE >R ;       IMMEDIATE
+: 2R> 
+	POSTPONE R> POSTPONE R> ;       IMMEDIATE
+
+
+
+: 2ROT 
+	2>R 2SWAP 2R> 2SWAP ;
+
+
+\
+\ M*/ (I don't like this kind of stuff)
+\
+\ "An exercise in mathematical algorithm design"
+
+: un* ( u n -- d ) 
+   DUP 0< IF  NEGATE UM* DNEGATE  ELSE  UM*  THEN ;
+
+: dn* ( d n -- t )
+   ROT OVER un* 2SWAP M* ROT S>D D+ ;
+
+: tn/ ( t +n -- d )
+   >R ROT  
+   0       R@ UM/MOD  SWAP  
+   2SWAP   R@ FM/MOD 
+   ROT ROT R> UM/MOD   NIP
+   0 D+ ;
+
+: M*/ ( d1 n1 +n2 -- d2 )   >R dn* R> tn/ ;
+
+\ Dies sollte die floored Variante sein. 
+
+
+\
+\
+\ set the ENVIRONMENT
+\
+\
+S" DOUBLE"       FALSE    1 SET-ENVIRONMENT
+S" DOUBLE-EXT"   TRUE     1 SET-ENVIRONMENT
+
+
+SET-CURRENT ( restore )
+
+

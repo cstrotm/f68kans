@@ -1,0 +1,19 @@
+PROGRAM test
+VAR laufVar, i, j, SUM
+BEGIN
+Read i;
+laufVar := i+1;
+j := 0 - 1;
+SUM := j;
+WHILE laufVar > 0 DO
+	j := j + 2;
+	IF j#3 THEN SUM := SUM+j END;
+	laufVar := laufVar -1
+	END;
+IF i+1 > 0 THEN j:=j-2 END;
+IF i > 0 THEN SUM := 3+SUM END;
+Write SUM - (j - 2 * 2 + 11 + 9 - (3*5)) 
+END
+ 
+
+

@@ -1,0 +1,96 @@
+\
+\ Controls
+\
+
+: BEGIN 
+	<mark	0 is_macro !
+	; 
+IMMEDIATE restrict
+
+
+: UNTIL
+	POSTPONE ?branch
+	code,
+	;
+IMMEDIATE restrict
+
+
+: AGAIN
+	POSTPONE branch
+	code,
+	;
+IMMEDIATE restrict
+
+
+: REPEAT
+	POSTPONE branch
+	code,
+	>resolve
+	;
+IMMEDIATE restrict
+
+
+: WHILE
+	POSTPONE ?branch
+	>mark SWAP
+	;
+IMMEDIATE restrict
+
+
+
+
+: IF 
+	POSTPONE ?branch 
+	>mark 
+	;
+IMMEDIATE restrict
+
+
+: THEN
+	>resolve
+	;
+IMMEDIATE restrict
+
+
+: ELSE
+	POSTPONE branch 
+	>mark SWAP
+	>resolve
+	;
+IMMEDIATE restrict
+
+
+: DO
+	['] (do	jsrsb,
+	>mark
+	0 is_macro !
+	;
+IMMEDIATE restrict
+
+
+: LOOP
+	['] (loop	jsrsb,
+	>resolve
+	;
+IMMEDIATE restrict
+
+
+: ?DO
+	['] (?do	jsrsb,
+	>mark
+	0 is_macro !
+	;
+IMMEDIATE restrict
+
+
+: +LOOP
+	['] (+loop	jsrsb,
+	>resolve
+	;
+IMMEDIATE restrict
+
+
+
+
+
+

@@ -1,0 +1,38 @@
+****************************************************************
+* 
+* License for the F68KANS software by Joerg Plewe, Germany
+*
+****************************************************************
+
+The F68KANS software package is copyrighted by me as its author.
+
+You are granted the right to use and distribute this software as long as
+no commercial goal is persuid.
+
+In the moment you think of any commercial use or exploit of this
+software you will have to contact me as the author and ask for a
+license agreement. This software may not be bundled together with other
+products without my permission. 
+
+('License agreement' does not necessarily mean 'license fee') 
+
+In any case you will have to preserve my copyright.
+
+
+Disclaimer
+
+The author of this program accepts no responsibility for damages
+resulting from the use of this product and makes no warranty or
+representation, either express or implied, including but not limited to,
+any implied warranty of merchantability or fitness for a particular
+purpose. This software is provided "AS IS", and you, its user, assume
+all risks when using it.
+
+
+For I am not a laywer I hope this license file will not hurt any laws.
+In this case, the hurted law has to be considered as valid and superior. 
+
+
+Joerg Plewe,  Germany, Muelheim, 26feb1995
+
+

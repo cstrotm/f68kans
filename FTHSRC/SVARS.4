@@ -1,0 +1,53 @@
+
+VARIABLE LAST-SVARIABLE
+LAST-SVARIABLE OFF
+: SVARIABLE   CREATE   0 , 0 , HERE LAST-SVARIABLE DUP @ , ! ;
+256 CONSTANT POOL
+CREATE FREELIST POOL 2* 1+ CELLS ALLOT
+: CELLSLINK
+     FREELIST POOL 0 DO
+        0 OVER CELL+ !
+        DUP 2 CELLS + DUP ROT ! LOOP
+     OFF ; CELLSLINK
+: >THREAD CELL+ ;
+: THREAD> 1 CELLS - ;
+: PREVIOUS-SV> 2 CELLS - ;
+
+
+
+: V-NEW  ( aa -- ) FREELIST @
+( aa 1st-free )    DUP 0= ABORT" Out of stack-variable space"
+( aa 1st-free )    DUP @ FREELIST !
+( aa free )        2DUP THREAD> 2 CELLS MOVE
+( aa free )        SWAP >THREAD ! ;
+
+: V-OLD ( aa -- )         DUP >THREAD @ DUP IF
+( sv old-link )           DUP THREAD> ROT
+( old-link old-value sv ) 2 CELLS MOVE
+( )                       FREELIST @ OVER ! FREELIST ! ELSE
+( sv old-link )           2DROP THEN ;
+
+: V-PUSH ( x aa -- ) DUP V-NEW ! ;
+: V-POP ( aa -- x ) DUP @ SWAP V-OLD ;
+
+
+: V-PICK ( n aa -- x ) >THREAD SWAP ?DUP IF 0 DO @ LOOP
+    THEN THREAD> @ ;
+: ONLY-V? ( aa -- f ) >THREAD @ 0= 0= ;
+: .SV ( svar -- ) CR >THREAD BEGIN DUP THREAD>
+    @ U. @ ?DUP 0= UNTIL ;
+
+
+SVARIABLE SACTION  ( SACTION will provide a flag )
+( j* svariable-link -- j*' f )
+: SSEARCH ( i* svar -- j* f )
+             >R BEGIN
+( j* )       R@ @ SACTION @ EXECUTE
+( j* f )     R> OVER 0= WHILE
+( j* f wida) >THREAD @ DUP WHILE THREAD> >R DROP REPEAT THEN
+( j* f wida) DROP ;
+
+: VOID ( svar -- ) BEGIN DUP >THREAD @ WHILE DUP V-OLD REPEAT
+     DROP ;
+: VOID-ALL   LAST-SVARIABLE @
+    BEGIN DUP WHILE DUP PREVIOUS-SV> VOID  @ REPEAT  DROP ;

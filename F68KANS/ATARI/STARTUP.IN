@@ -1,0 +1,7 @@
+initFLOT
+initPBGI
+initPLOT
+initCLIB
+initBIOS
+INCLUDE \F\SRC\DEBUG.4
+MARKER NEW

@@ -1,0 +1,114 @@
+[?1hA portable Forth environment written in C. Version 0.9.6 of 28-Jul-94
+Copyright Dirk Uwe Zoller 1994. Please enter LICENSE and WARRANTY.
+
+To quit say BYE.
+
+Hi there, enjoy Forth!
+Loading Gray ... Copyright 1990-1994 Martin Anton Ertl; NO WARRANTY 
+
+"noop" is redefined 
+"?pairs" is redefined 
+"**" is redefined 
+eps 
+else 
+
+|| (( "if" expr "then" stmt (( "else" stmt )) ?? ))
+                                               ^
+::: conflict:2 
+oberon 
+""THEN"" is redefined 
+""ELSE"" is redefined 
+""IF"" is redefined 
+"type" is redefined 
+"case" is redefined 
+
+(( (( ident "." )) ?? ident )) <- qualident
+                    ^
+::: conflict:4 
+
+(( qualident (( "." ident || "[" ExpList "]" || "(" qualident ")" || "^" )) **
+                                                                            ^
+::: conflict:15 
+
+   (( ProcedureDeclaration ";" || ForwardDeclaration ";" )) **
+                                                          ^
+::: conflict:57 
+
+)) ?? statement rule
+ ^
+::: conflict:4 
+calc 
+
+"t" is redefined 
+"x" is redefined 
+""("" is redefined 
+"")"" is redefined 
+""+"" is redefined 
+""-"" is redefined 
+""*"" is redefined 
+""/"" is redefined 
+""="" is redefined 
+"expr" is redefined 
+"factor" is redefined 
+"term" is redefined 
+"?" is redefined 
+5 
+mini 
+
+"&&" is redefined Loading mini ... 
+
+"token" is redefined 
+"";"" is redefined 
+"","" is redefined 
+"":="" is redefined 
+""="" is redefined 
+""#"" is redefined 
+"">"" is redefined 
+""+"" is redefined 
+""-"" is redefined 
+""*"" is redefined 
+""("" is redefined 
+"")"" is redefined 
+"Ident" is redefined 
+"BEGIN" is redefined 
+"IF" is redefined 
+"THEN" is redefined 
+"WHILE" is redefined 
+"DO" is redefined 
+"digit" is redefined 
+"blank" is redefined 
+
+"scan" is redefined 
+"sym" is redefined 
+"t" is redefined 
+"";"" is redefined 
+"","" is redefined 
+"":="" is redefined 
+""="" is redefined 
+""#"" is redefined 
+"">"" is redefined 
+""+"" is redefined 
+""-"" is redefined 
+""*"" is redefined 
+""("" is redefined 
+"")"" is redefined 
+"Ident" is redefined 
+""VAR"" is redefined 
+""BEGIN"" is redefined 
+""END"" is redefined 
+""IF"" is redefined 
+""THEN"" is redefined 
+""WHILE"" is redefined 
+""DO"" is redefined 
+"<>" is redefined 
+"Expr" is redefined 
+"Number" is redefined 
+"Factor" is redefined 
+"Term" is redefined 
+"i" is redefined 
+"j" is redefined 
+"test" is redefined 
+25 
+
+Goodbye!
+[?1l

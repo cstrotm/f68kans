@@ -1,0 +1,30 @@
+
+: 0!ORDER ( -- )
+	hidden-wordlist
+	float-wordlist
+	file-wordlist
+	double-wordlist
+	FORTH-WORDLIST
+	5 SET-ORDER ;
+
+0!ORDER
+
+GET-CURRENT hidden-wordlist SET-CURRENT
+: .wl ( addr len -- )
+	2DUP TYPE ."  has wid " EVALUATE . CR ; 
+SET-CURRENT
+
+
+: .wordlists
+	CR
+	S" FORTH-WORDLIST" 	.wl
+	S" hidden-wordlist" .wl
+	S" float-wordlist"	.wl
+	S" local-wordlist"	.wl
+	S" file-wordlist"	.wl
+	S" double-wordlist"	.wl
+	S" tasker-wordlist" .wl
+	;
+
+
+

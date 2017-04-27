@@ -1,0 +1,11 @@
+: POSTPONE# POSTPONE LITERAL ;
+
+: ]]            BEGIN
+( )              >IN @ BL WORD DUP C@ WHILE
+( >in ca )       DUP COUNT S" [[" COMPARE WHILE
+( >in ca )        FIND IF
+( >in xt )         DROP >IN ! POSTPONE POSTPONE ELSE
+( >in ca )         0 0 ROT COUNT >NUMBER ABORT" can't ]]"
+( >in d ca)        2DROP POSTPONE# POSTPONE POSTPONE# DROP THEN
+                REPEAT
+( >in ca )      THEN 2DROP ; IMMEDIATE

@@ -1,0 +1,191 @@
+\
+\ Special for Atari ST/TT
+\
+\ JPS940422
+\
+HEX
+
+: {undisturbed
+	[
+	40C0		codew,		\ move.w sr,d0
+	00400700	code,		\ ori.w #$0700,d0
+	46C0		codew,		\  move.w d0,sr
+	] ;
+
+: }undisturbed
+	[
+	40C0		codew,		\ move.w sr,d0
+	0240F3FF	code,		\ andi.w #$F3FF,d0
+	46C0		codew,		\ move.w d0,sr
+	] ;
+
+: Supexec ( xt -- ? )		\ executes xt in supervisor mode
+	code>data >abs
+	[
+ 	2F1E		codew,		\ move.l (a6)+,-(a7)
+	3F3C0026    code,		\ move.w #$26,-(a7)
+	4E4E		codew,		\ trap #14
+	5C8F		codew,		\ addq.l #6,a7
+	] ;
+
+\
+\ Carefull:  Supexec saves and restores registers!! 
+\
+\ That means, that words executed by Supexec cannot change
+\ the height of the stack!
+\
+\ and: in a Supexec-word, A5 seems to be destroyd. So a complete
+\ class of words will NOT work with Supexec, e.g. words 
+\ created by CREATE DOES>
+\
+
+
+: @sys ( addr -- value ) 		\ access address in supervisor mode
+	['] @ Supexec ;
+
+: !sys ( value addr --  ) 		\ access address in supervisor mode
+	['] ! Supexec 2DROP ;
+
+: C@sys ( addr -- value ) 		\ access address in supervisor mode
+	['] C@ Supexec ;
+
+: C!sys ( value addr -- ) 		\ access address in supervisor mode
+	['] C! Supexec 2DROP ;
+
+: w@sys ( addr -- value ) 		\ access address in supervisor mode
+	['] w@ Supexec ;
+
+: w!sys ( value addr -- ) 		\ access address in supervisor mode
+	['] w! Supexec 2DROP ;
+
+
+
+
+HEX
+0114 CONSTANT 200HzInterrupt
+04BA CONSTANT _hz_200
+
+FF8800 CONSTANT PSGgiselect
+FF8802 CONSTANT PSGgiwrite
+FF8800 CONSTANT PSGgiread
+
+FFFA01 CONSTANT MFPgpip
+
+HEX
+
+: (portB!
+	{undisturbed 
+		F PSGgiselect (abs) C! 
+		PSGgiwrite (abs) C!
+	}undisturbed
+	;
+
+: portB! ( byte -- )
+	['] (portB! Supexec DROP ;
+
+: (portA!
+	{undisturbed 
+		E PSGgiselect (abs) C! 
+		PSGgiwrite (abs) C!
+	}undisturbed
+	;
+
+: portA! ( byte -- )
+	['] (portA! Supexec DROP ;
+
+
+: (portA@
+	{undisturbed 
+		E PSGgiselect (abs) C! 
+		DROP PSGgiread (abs) C@
+	}undisturbed
+	;
+
+: portA@ ( -- )
+	0 ['] (portA@ Supexec  ;
+
+
+: gpip@ ( -- byte )
+	MFPgpip (abs) C@sys
+	;
+
+
+
+
+\
+\ work with bitmasks
+\
+
+: BSET ( n bitnr  -- n1 )
+	1 SWAP LSHIFT OR ;
+
+: BCLEAR ( n bitnr -- n1 )
+	1 SWAP LSHIFT INVERT AND ;
+
+: BTOGGLE ( n bitnr -- n1 )
+	1 SWAP LSHIFT XOR ;
+
+: BTEST ( n bitnr -- flag )
+	1 SWAP LSHIFT AND 0= 0= ;
+
+
+\
+\ time
+\
+
+DECIMAL
+
+: MS ( n -- )
+	5 / _hz_200 (abs) @sys  + 	\ ticker value in the end
+	DUP
+	BEGIN 
+		_hz_200 (abs) @sys > 
+	WHILE 
+		DUP  PAUSE 
+	REPEAT DROP 
+	;
+
+\
+\
+\
+ : doWatchDog
+	BEGIN   30000 MS  ." *" CR   AGAIN ;
+
+' doWatchDog TASK WatchDog
+
+WatchDog WAKE
+
+
+\
+\ peripherial IO
+\
+
+: C!aux ( char -- )
+	_stdaux _putc DROP ;
+
+: C@aux ( -- char )
+	_stdaux _getc ;
+
+
+
+
+\
+\
+\
+: !prn ( byte -- )
+	portB!
+	portA@ 5 BCLEAR portA!
+	portA@ 5 BSET portA!
+	BEGIN gpip@ 0 BTEST INVERT UNTIL 
+	;
+	
+
+: TYPEprn ( addr u -- )
+	0 ?DO
+		COUNT !prn 
+	LOOP
+	DROP ;
+
+
+
+

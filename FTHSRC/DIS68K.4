@@ -1,0 +1,798 @@
+\
+\    68K Disassembler provided by Dirk Zoller
+\
+\
+\ Brought near to ANSI and made executable for F68KANS
+\ by Joerg Plewe
+\
+
+
+
+\ ** 68000 DISASSEMBLER                             DUZ 04/06/89
+
+
+\ prelude
+C" ON" FIND NIP   C" OFF" FIND NIP  AND  0=
+[IF] 
+: ON  ( addr -- )   TRUE SWAP ! ; 
+: OFF ( addr -- )  FALSE SWAP ! ;
+[THEN]  
+
+
+
+
+\ ** 68000 DISASSEMBLER                             DUZ 04/06/89
+
+ONLY FORTH-WORDLIST FORTH-WORDLIST 2 SET-ORDER  FORTH DEFINITIONS
+
+MARKER *disassembler*
+VOCABULARY DISASSEMBLER  DISASSEMBLER ALSO DEFINITIONS
+
+HEX 
+
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: .EMIT     ( char --- )
+            DUP BL <  OVER 7F > OR
+            IF  DROP [CHAR] .  THEN  EMIT ;
+
+: .TYPE     ( addr cnt --- )
+            0 DO  COUNT .EMIT  LOOP DROP ;
+
+: TAB       ( n --- ; column to position on )
+            out @ -  SPACES ;
+
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: TABLE     CREATE  DOES>  SWAP CELLS + @ ;
+: VECTOR    CREATE  DOES>  SWAP CELLS + @ EXECUTE ;
+
+: UVEC      CREATE  ( n --- )   ,
+            DOES>   ( --- flag )
+                0  SWAP
+                DUP CELL+ SWAP @ CELLS  OVER + SWAP
+                DO  DROP  I @ EXECUTE  DUP IF  LEAVE  THEN
+                1 CELLS +LOOP ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: EXT.B     DUP   80 AND IF FFFFFF00 OR ELSE   FF AND THEN ;
+: EXT.W     DUP 8000 AND IF FFFF0000 OR ELSE FFFF AND THEN ;
+
+( ????? )
+: XTCT      ( n1 b1 b2 --- n2 ; extrahiert Bits b2 bis b1 )
+            DUP >R SWAP >R  RSHIFT
+            FFFFFFFF R> R> - LSHIFT INVERT AND ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+VARIABLE $  ( location counter )
+VARIABLE $' ( temporary location counter )
+VARIABLE OPC
+
+: ADVANCE   $' @ $ ! ;
+
+: @W        ( --- w ; read word from $' and advance )
+            $' @ w@  2 $' +! ;
+
+: @L        ( --- n ; read long from $' and advance )
+            $' @ @  4 $' +! ;
+
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: OBUF      ( --- addr ; output buffer )
+            PAD  100 + ;
+
+: SHOW.ASM  ( --- ; displays disassembled instruction )
+            OBUF COUNT TYPE ;
+
+: CLR.O     ( --- ; clears output buffer )
+            OBUF OFF ;
+
+: APPEND.O  ( addr cnt --- ; append to output buffer )
+            OBUF COUNT +  SWAP                 ( src dest cnt )
+            DUP OBUF C@ +  OBUF C!         ( adjust countbyte )
+            CMOVE ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: SPACES.O  ( n --- ; append n spaces to output buffer )
+            0 MAX  PAD SWAP  2DUP BL FILL  APPEND.O ;
+
+: TAB.O     ( n --- ; column to position on )
+            OBUF C@ -  SPACES.O ;
+
+: DABS ( d -- +d )
+	DUP 0< IF DNEGATE THEN ;
+
+: -#S       ( d --- 0 )     DUP >R DABS #S R> SIGN ;
+: H#        ( d1 --- d2 )   BASE @ >R HEX # R> BASE ! ;
+
+: A#S       ( addr --- )    0  H# H# H# H# H# H#  2DROP ;
+: W#S       ( 16b --- )     0  H# H# H# H#        2DROP ;
+
+: +>        ( --- addr cnt )    0 0 #> ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: W.        ( w --- ; print word using 4 hex digits )
+            <# W#S +> TYPE ;
+
+: A.        ( addr --- ; print address using six hex digits )
+            <# A#S +> TYPE ;
+
+: $.        ( --- ; display current $ ) $ @ A.  ." : " ;
+
+: SHOW.OBJ  ( --- ; displays objectcode of instruction )
+            $ @ $' @ OVER - .TYPE  0C TAB $.
+            $' @ $ @ DO  I w@ W. SPACE  2 +LOOP ;
+
+: SHOW.DIS  ( --- ; displays disassembly line )
+            CR SHOW.OBJ  32 TAB SHOW.ASM ;
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: ," ( addr "ccc<"> -- addr )
+	DUP POSTPONE C" DUP C@ 1+ DUP ALLOT ROT SWAP CMOVE ;
+	
+HERE ," UNLK"       HERE ," TST"        ( 72) HERE ," TRAPV"
+HERE ," TRAP"       HERE ," TAS"        ( 69) HERE ," SWAP"
+HERE ," SUBX"       HERE ," SUBQ"       ( 66) HERE ," SUBI"
+HERE ," SUBA"       HERE ," SUB"        ( 63) HERE ," STOP"
+HERE ," SBCD"       HERE ," RTS"        ( 60) HERE ," RTR"
+HERE ," RTE"        HERE ," RTD"        ( 57) HERE ," ROXR"
+HERE ," ROXL"       HERE ," ROR"        ( 54) HERE ," ROL"
+HERE ," RESET"      HERE ," PEA"        ( 51) HERE ," ORI"
+HERE ," OR"         HERE ," NOT"        ( 48) HERE ," NOP"
+HERE ," NEGX"       HERE ," NEG"        ( 45) HERE ," NBCD"
+HERE ," MULU"       HERE ," MULS"       ( 42) HERE ," MOVES"
+HERE ," MOVEQ"      HERE ," MOVEP"      ( 39) HERE ," MOVEM"
+HERE ," MOVEC"      HERE ," MOVEA"      ( 36) HERE ," MOVE"
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+HERE ," LSR"        HERE ," LSL"        ( 33) HERE ," LINK"
+HERE ," LEA"        HERE ," JSR"        ( 30) HERE ," JMP"
+HERE ," ILLEGAL"    HERE ," EXT"        ( 27) HERE ," EXG"
+HERE ," EORI"       HERE ," EOR"        ( 24) HERE ," DIVU"
+HERE ," DIVS"       HERE ," CMPM"       ( 21) HERE ," CMPI"
+HERE ," CMPA"       HERE ," CMP"        ( 18) HERE ," CLR"
+HERE ," CHK"        HERE ," BTST"       ( 15) HERE ," BSR"
+HERE ," BSET"       HERE ," BRA"        ( 12) HERE ," BKPT"
+HERE ," BCLR"       HERE ," BCHG"       ( 09) HERE ," ASR"
+HERE ," ASL"        HERE ," ANDI"       ( 06) HERE ," AND"
+HERE ," ADDX"       HERE ," ADDQ"       ( 03) HERE ," ADDI"
+HERE ," ADDA"       HERE ," ADD"        ( 00) HERE ," ABCD"
+
+( 75 addresses of strings on stack now... )
+
+\ 68000 Disassembler                                DUZ 04/06/89
+: A, , ; 
+
+ALIGN ( Even address, compile string addresses: )
+A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+HERE 4B ( decimal 75 ) CELLS -
+
+: MNEM      ( n --- addr cnt )
+            CELLS [ DUP ] LITERAL + @ COUNT ;
+DROP
+
+: MNEM.O    ( n --- ; append mnemonic to output buffer )
+            MNEM APPEND.O ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+
+: -ROT ROT ROT ;
+: OPCB      ( b1 b2 --- n ) OPC @ -ROT XTCT ;
+: OPCF      CREATE  ( b1 b2 --- )
+                w, w,
+            DOES>   ( --- n )
+                DUP w@  SWAP 2 + w@  OPCB ;
+
+ 6  8 OPCF SIZE     ( 0=byte, 1=word, 2=long )
+ 0  3 OPCF REG1     ( first operand register )
+ 3  6 OPCF MOD1     ( first operand mode )
+ 9 0C OPCF REG2     ( second operand register )
+ 6  9 OPCF MOD2     ( second operand mode )
+ 8 0C OPCF CCODE    ( condition code )
+0C 10 OPCF LINE     ( of instructions )
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: .B        S" .B"  APPEND.O ;
+: .W        S" .W"  APPEND.O ;
+: .L        S" .L"  APPEND.O ;
+
+VECTOR NSIZE.O  ' .B ,  ' .W ,  ' .L , 
+VARIABLE (SIZE)
+: SIZE.O    ( --- ; append size to mnemonic )
+            (SIZE) @ NSIZE.O ;
+
+: BIT       ( b --- flag ; b: bitnumber, flag: 0/1 )
+            OPC @ OVER 1+ ROT XTCT ;
+
+: .W/L.O    ( b --- ; b bitnumber: size .W or .L )
+            BIT 1+ (SIZE) !  SIZE.O ;
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+HERE ," LE"     HERE ," GT"     HERE ," LT"     HERE ," GE"
+HERE ," MI"     HERE ," PL"     HERE ," VS"     HERE ," VC"
+HERE ," EQ"     HERE ," NE"     HERE ," CS"     HERE ," CC"
+HERE ," LS"     HERE ," HI"     HERE ," F"      HERE ," T"
+
+ALIGN
+A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+HERE 10 ( decimal 16 ) CELLS -
+
+: CC        ( n --- addr cnt )
+            CCODE CELLS [ DUP ] LITERAL + @ COUNT ; DROP
+
+: CC.O      ( n --- ; append condition code to output buffer )
+            CC APPEND.O ;
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: <(>       ( --- )     [CHAR] ( HOLD ;
+: <)>       ( --- )     [CHAR] ) HOLD ;
+: <,>       ( --- )     [CHAR] , HOLD ;
+: <.>       ( --- )     [CHAR] . HOLD ;
+: <W>       ( --- )     [CHAR] W HOLD  <.> ;
+: <L>       ( --- )     [CHAR] L HOLD  <.> ;
+: <D>       ( n --- )   0 H# 2DROP  [CHAR] D HOLD ;
+: <A>       ( n --- )   0 H# 2DROP  [CHAR] A HOLD ;
+: <PC>      ( --- )     [CHAR] C HOLD  [CHAR] P HOLD ;
+: <(A)>     ( n --- )   <)> <A> <(> ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: <X>       ( extension --- displ ; addr.reg ind. with index )
+            DUP 0FF AND SWAP  DUP 0F 0C XTCT
+            OVER  800 AND IF  <L>  ELSE  <W>  THEN
+            SWAP 8000 AND IF  <A>  ELSE  <D>  THEN ;
+
+: D$        ( d --- addr cnt )  <# <D> +> ;
+: A$        ( a --- addr cnt )  <# <A> +> ;
+: ()$       ( a --- addr cnt )  <# <(A)> +> ;
+: ()+$      ( a --- addr cnt )  <# [CHAR] + HOLD  <(A)> +> ;
+: -()$      ( a --- addr cnt )  <# <(A)>  [CHAR] - HOLD +> ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: d()$      ( disp a --- addr cnt )
+            <# <(A)> EXT.W S>D -#S #> ;
+: d(,)$     ( a extension --- addr cnt )
+            <# <)>  <X> <,> SWAP <A> <(> EXT.B S>D -#S #> ;
+
+: d(PC)$    ( disp --- addr cnt )
+            <# <)> <PC> <(>  EXT.W S>D -#S #> ;
+: d(PC,)$   ( extension --- addr cnt )
+            <# <)> <X> <,> <PC> <(> EXT.B S>D -#S #> ;
+
+: ().W$     ( addr --- addr cnt )   <# <)> <W> W#S <(> +> ;
+: ().L$     ( addr --- addr cnt )   <# <)> <L> A#S <(> +> ;
+: #$        ( n --- addr cnt )  <# S>D -#S  [CHAR] # HOLD #> ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: SR.O      S" SR"   APPEND.O  -1 ;
+: CCR.O     S" CCR"  APPEND.O  -1 ;
+: USP.O     S" USP"  APPEND.O  -1 ;
+
+: D.O       ( reg --- f ; data register direct )
+            D$ APPEND.O -1 ;
+: A.O       ( reg --- f ; address register direct )
+            A$ APPEND.O -1 ;
+: ().O      ( reg --- f ; address register indirect )
+            ()$ APPEND.O -1 ;
+: ()+.O     ( reg --- f ; address reg. ind. with postincrement )
+            ()+$ APPEND.O -1 ;
+: -().O     ( reg --- f ; address reg. ind. with predecrement )
+            -()$ APPEND.O -1 ;
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: d().O     ( reg --- f ; address reg. ind. with displacement )
+            @W SWAP d()$ APPEND.O -1 ;
+: d(,).O    ( reg --- f ; address reg. ind. with index&displ. )
+            @W d(,)$ APPEND.O -1 ;
+
+: ().W.O    ( --- ; absolute short )    @W ().W$ APPEND.O ;
+: ().L.O    ( --- ; absolute long )     @L ().L$ APPEND.O ;
+
+: d(PC).O   ( --- ; PC relative )       @W d(PC)$ APPEND.O ;
+: d(PC,).O  ( --- ; PC rel with index ) @W d(PC,)$ APPEND.O ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+: #.O       ( size --- ; immediate )
+            CASE  (SIZE) @
+                0 OF  @W EXT.B  ENDOF   1 OF  @W  ENDOF
+                2 OF  @L  ENDOF         3 OF  @W  ENDOF
+            ENDCASE  #$ APPEND.O ;
+
+: OTHER.O   (  reg --- f ; address modes with mode 7 )
+            CASE
+                0 OF  ().W.O -1  ENDOF
+                1 OF  ().L.O -1  ENDOF
+                2 OF  d(PC).O -1  ENDOF
+                3 OF  d(PC,).O -1  ENDOF
+                4 OF  #.O -1  ENDOF
+                0 SWAP
+            ENDCASE ;
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+VECTOR EA   ( reg mod --- flag ; true if legal )
+   ' D.O ,   	' A.O ,  	' ().O ,  	' ()+.O 
+	' -().O ,  	' d().O ,  	' d(,).O ,  ' OTHER.O ,
+
+: OP.TAB.O  8 TAB.O ;
+: ,.O       S" ," APPEND.O ;
+
+: 1ST.EA    ( --- flag ; decode source or first EA )
+            OP.TAB.O  REG1 MOD1 EA ;
+: 2ND.EA    ( --- flag ; decode destination or second EA )
+            ,.O  REG2 MOD2 EA ;
+
+: SRC&DST   ( reg1 mod1 reg2 mod2 --- flag )
+            OP.TAB.O 2SWAP EA
+            IF  ,.O EA  ELSE  2DROP 0  THEN ;
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+: REL8      ( --- flag )
+            8 0 OPCB ?DUP
+            IF  EXT.B $' @ +  <# A#S +> APPEND.O  -1
+            ELSE  0  THEN ;
+
+: REL16     ( --- flag )
+            $' @  @W EXT.W +  <# A#S +> APPEND.O  -1 ;
+
+FALSE [IF] comment:
+
+comment;
+[THEN]
+\ 68000 Disassembler: LINE 0                        DUZ 04/06/89
+
+: ARL#      ( n --- flag ; immediate arithmetic or logic )
+            SIZE 3 -
+            IF  MNEM.O
+                MOD1 REG1 7 4 D=                ( CCR or SR )
+                DUP 0= IF  SIZE.O  THEN
+                OP.TAB.O  #.O ,.O
+                IF  SIZE IF  SR.O  ELSE  CCR.O  THEN
+                ELSE  1ST.EA  THEN
+            ELSE  DROP 0
+            THEN ;
+
+
+\ 68000 Disassembler: LINE 0                        DUZ 04/06/89
+
+DECIMAL
+TABLE WHICH#    51 ,  7 ,   66 ,  3 ,  -1 ,  26 ,  21 ,  -1 ,
+HEX           ( ORI   ANDI  SUBI  ADDI bit   EORI  CMPI  moves)
+
+: ARL#?     ( --- flag )
+            CCODE 2/ WHICH#  DUP 0<
+            IF  DROP 0  ELSE  ARL#  THEN ;
+
+: MOVEP?    ( --- flag )
+            MOD1 1 = IF  28 MNEM.O  6 .W/L.O
+                REG1 5 REG2 0  7 BIT IF  2SWAP  THEN  SRC&DST
+            ELSE  0  THEN ;
+
+
+\ 68000 Disassembler: LINE 0                        DUZ 04/06/89
+
+TABLE WHICH.BIT     DECIMAL  16 ,  10 ,  11 ,  14 ,
+                    HEX    ( BTST  BCHG  BCLR  BSET )
+
+: BXXX      ( --- flag )
+            SIZE WHICH.BIT MNEM.O
+            8 BIT IF  REG2 0  ELSE  (SIZE) OFF 4 7  THEN
+            REG1 MOD1 SRC&DST ;
+
+: LINE0     ( --- flag )
+            8 BIT IF  MOVEP?  ELSE  ARL#?  THEN
+            ?DUP 0= IF  BXXX  THEN ;
+
+
+\ 68000 Disassembler: LINE 1,2,3                    DUZ 04/06/89
+
+: MV.OP     ( --- flag )
+            SIZE.O  1ST.EA  DUP IF  DROP 2ND.EA  THEN ;
+
+: MOVE/A    ( --- ; output MOVE or MOVEA )
+            24  MOD2 1 = IF  1+  THEN  MNEM.O ;
+
+: LINE1     ( --- flag ; MOVE.B ; destination not addr reg! )
+            MOD2 1 = IF  0
+            ELSE  (SIZE) OFF  MOVE/A MV.OP  THEN ;
+
+: LINE2     ( --- flag ; MOVE.L )   2 (SIZE) !  MOVE/A MV.OP ;
+
+: LINE3     ( --- flag ; MOVE.W )   1 (SIZE) !  MOVE/A MV.OP ;
+
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: THAT!     CREATE  ( i h --- ) w, w,
+            DOES>   ( --- flag )
+                DUP w@ OPC @ =
+                IF  2 + w@ MNEM.O  -1  ELSE  DROP 0  THEN ;
+
+DECIMAL 29 HEX 4AFC THAT! ILLEGAL?
+DECIMAL 53 HEX 4E70 THAT! RESET?
+DECIMAL 48 HEX 4E71 THAT! NOP?
+DECIMAL 63 HEX 4E72 THAT! STOP?
+DECIMAL 59 HEX 4E73 THAT! RTE?
+DECIMAL 58 HEX 4E74 THAT! RTD?
+DECIMAL 61 HEX 4E75 THAT! RTS?
+DECIMAL 72 HEX 4E76 THAT! TRAPV?
+DECIMAL 60 HEX 4E77 THAT! RTR?
+
+
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: 16-3=     10 3 XTCT  10 3 OPCB = ;
+
+: SWAP?     ( --- flag )
+            4840 16-3= IF  45 MNEM.O 1ST.EA  ELSE  0  THEN ;
+
+: BKPT?     ( --- flag )
+            4841 16-3= DUP
+            IF  0C MNEM.O  3 0 OPCB  OP.TAB.O #$ APPEND.O
+            THEN ;
+
+: LINK?     ( --- flag )
+            4E50 16-3= DUP
+            IF  21 MNEM.O  OP.TAB.O REG1 A.O DROP  ,.O #.O
+            THEN ;
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: UNLK?     ( --- flag )
+            4E51 16-3= DUP
+            IF  4B MNEM.O  OP.TAB.O REG1 A.O DROP  THEN ;
+
+: >USP?     ( --- flag )
+            4E60 16-3= DUP
+            IF  24 MNEM.O  OP.TAB.O REG1 A.O ,.O USP.O 2DROP
+            THEN ;
+
+: USP>?     ( --- flag )
+            4E68 16-3= DUP
+            IF  24 MNEM.O  OP.TAB.O USP.O ,.O REG1 A.O 2DROP
+            THEN ;
+
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: 16-6=     ( n --- flag ; compare bits 6 thru 15 with OPC )
+            10 6 XTCT  10 6 OPCB = ;
+
+: SR>?      ( --- flag )
+            40C0 16-6=
+            IF  1 (SIZE) !
+                24 MNEM.O  OP.TAB.O SR.O DROP  ,.O 1ST.EA
+            ELSE  0  THEN ;
+
+: >SR?      ( --- flag )
+            46C0 16-6=
+            IF  1 (SIZE) !
+                24 MNEM.O  1ST.EA  ,.O SR.O DROP
+            ELSE  0  THEN ;
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: CCR>?     ( --- flag )
+            42C0 16-6=
+            IF  (SIZE) OFF
+                24 MNEM.O  OP.TAB.O CCR.O DROP  ,.O 1ST.EA
+            ELSE  0  THEN ;
+: >CCR?     ( --- flag )
+            44C0 16-6=
+            IF  (SIZE) OFF
+                24 MNEM.O  OP.TAB.O 1ST.EA  ,.O CCR.O DROP
+            ELSE  0  THEN ;
+
+: TRAP?     10 4 OPCB  4E4 = DUP
+            IF  47 MNEM.O  4 0 OPCB  OP.TAB.O #$ APPEND.O
+            THEN ;
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: 1OP!      CREATE  ( i h --- ) w, w,
+            DOES>   ( --- flag )
+                DUP w@ 16-6=
+                IF  2 + w@ MNEM.O  1ST.EA  ELSE  DROP 0  THEN ;
+
+DECIMAL 45 HEX 4800 1OP! NBCD?
+DECIMAL 52 HEX 4840 1OP! PEA?
+DECIMAL 70 HEX 4AC0 1OP! TAS?
+DECIMAL 31 HEX 4E80 1OP! JSR?
+DECIMAL 30 HEX 4EC0 1OP! JMP?
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: S1OP!     CREATE  ( i h --- ) w, w,
+            DOES>   ( --- flag )
+                DUP w@ 10 8 XTCT  10 8 OPCB =
+                IF  2 + w@ MNEM.O SIZE.O 1ST.EA
+                ELSE  DROP 0  THEN ;
+
+DECIMAL 47 HEX 4000 S1OP! NEGX?
+DECIMAL 18 HEX 4200 S1OP! CLR?
+DECIMAL 46 HEX 4400 S1OP! NEG?
+DECIMAL 49 HEX 4600 S1OP! NOT?
+DECIMAL 73 HEX 4A00 S1OP! TST?
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: CHK?      ( --- flag )
+            8 BIT  6 BIT 0= AND
+            IF  11 MNEM.O  REG1 MOD1 REG2 0 SRC&DST
+            ELSE  0  THEN ;
+
+: LEA?      ( --- flag )
+            MOD2 7 =
+            IF  20 MNEM.O  REG1 MOD1 REG2 1 SRC&DST
+            ELSE  0  THEN ;
+
+: EXT?      ( --- flag )
+            10 7 OPCB 91 =  MOD1 0= AND
+            IF  1C MNEM.O  6 .W/L.O  1ST.EA
+            ELSE  0  THEN ;
+
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: /.O       ( mask --- mask )
+            DUP IF  S" /"  APPEND.O  THEN ;
+
+: NEXTREG   ( mask --- mask' )
+            MOD1 4 =  ( predecrement? )
+            IF  2*  DUP 0FFFF AND  SWAP 10000 AND
+            ELSE  DUP 2/  SWAP 1 AND  THEN ;
+
+: MVM.OP    ( --- )
+            @W
+            8 0 DO  NEXTREG IF  I D$ APPEND.O  /.O  THEN  LOOP
+            8 0 DO  NEXTREG IF  I A$ APPEND.O  /.O  THEN  LOOP
+            DROP ;
+
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+: MOVEM?    ( --- flag )
+            10 7 OPCB 91 =
+            IF  27 MNEM.O  6 .W/L.O
+                OP.TAB.O MVM.OP  ,.O 1ST.EA
+            ELSE  10 7 OPCB 99 =
+                IF  27 MNEM.O  6 .W/L.O
+                    1ST.EA  ,.O MVM.OP
+                ELSE  0  THEN
+            THEN ;
+
+
+\ 68000 Disassembler: LINE 4                        DUZ 04/06/89
+
+22 UVEC LINE4   
+  ' ILLEGAL? ,   ' RESET? ,     ' NOP?  ,      ' STOP?  ,
+  ' RTE?     ,   ' RTD?   ,     ' RTS?  ,      ' TRAPV? ,
+  ' RTR?     ,   ' SWAP?  ,     ' BKPT? ,      ' LINK?  ,
+  ' UNLK?    ,   ' >USP?  ,     ' USP>? ,      ' TRAP?  ,
+  ' SR>?     ,   ' >SR?   ,     ' CCR>? ,      ' >CCR?  ,
+  ' NBCD?    ,   ' PEA?   ,     ' TAS?  ,      ' JSR?   ,
+  ' JMP?     ,   ' NEGX?  ,     ' CLR?  ,      ' NEG?   ,
+  ' NOT?     ,   ' TST?   ,     ' CHK?  ,      ' LEA?   ,
+  ' EXT?     ,   ' MOVEM? ,
+                
+
+\ 68000 Disassembler: LINE 5                        DUZ 04/06/89
+
+: INH#.O    ( --- ; output inhaerent immediate data )
+            OP.TAB.O  REG2 ?DUP 0= IF  8  THEN #$ APPEND.O ;
+
+: LINE5     ( --- flag )
+            SIZE 3 =
+            IF  MOD1 1 =                          ( DBcc, Scc )
+                IF  S" DB" APPEND.O  CC.O
+                    OP.TAB.O REG1 D.O DROP  ,.O REL16
+                ELSE  S" S" APPEND.O  CC.O  1ST.EA
+                THEN
+            ELSE                                 ( ADDQ, SUBQ )
+                8 BIT  IF  43  ELSE  4  THEN
+                MNEM.O SIZE.O  INH#.O ,.O 1ST.EA
+            THEN ;
+
+\ 68000 Disassembler: LINE 6                        DUZ 04/06/89
+
+: LINE6     ( --- flag )
+            CASE  CCODE
+                0 OF  0D ( BRA ) MNEM.O  ENDOF
+                1 OF  0F ( BSR ) MNEM.O  ENDOF
+                S" B" APPEND.O CC.O  ( Bcc )
+            ENDCASE
+            8 0 OPCB
+            IF  S" .S" APPEND.O  OP.TAB.O  REL8
+            ELSE  OP.TAB.O  REL16  THEN ;
+
+
+
+\ 68000 Disassembler: LINE 7                        DUZ 04/06/89
+
+: LINE7     ( --- flag )
+            8 BIT
+            IF  0
+            ELSE  29 MNEM.O                           ( MOVEQ )
+                OP.TAB.O  8 0 OPCB #$ APPEND.O
+                ,.O  REG2 D.O
+            THEN ;
+
+
+\ 68000 Disassembler: LINE 8                        DUZ 04/06/89
+
+: ARL.OP    ( --- flag )
+            REG1 MOD1  REG2 0  8 BIT IF 2SWAP THEN  SRC&DST ;
+
+: R/M.OP    ( --- ; flag )
+            3 BIT IF  4  ELSE  0  THEN
+            REG1 SWAP REG2 OVER SRC&DST ;
+
+: ?XBCD?    ( n --- flag ; opcode ABCD or SBCD, ADDX or SUBX )
+            8 BIT  MOD1 6 AND 0=  AND
+            IF  MNEM.O  R/M.OP  ELSE  DROP 0  THEN ;
+
+\ 68000 Disassembler: LINE 8                        DUZ 04/06/89
+
+: ?MD?      ( n --- flag ; MUL and DIV )
+            SIZE 3 =
+            IF  8 BIT -  ( ???S or ???U )
+                MNEM.O  REG1 MOD1  REG2 0  SRC&DST
+            ELSE  DROP 0  THEN ;
+
+: SBCD?     ( --- flag )    3E ?XBCD? ;
+: DIV?      ( --- flag )    18 ?MD? ;
+: OR?       ( --- flag )    32 MNEM.O SIZE.O ARL.OP ;
+
+3 UVEC LINE8  ' SBCD? ,  ' DIV? ,  ' OR? ,
+
+
+\ 68000 Disassembler: LINE 9                        DUZ 04/06/89
+
+: ?A?       ( n --- flag )
+            SIZE 3 =
+            IF  MNEM.O  8 .W/L.O
+                REG1 MOD1  REG2 1  SRC&DST
+            ELSE  DROP 0  THEN ;
+
+: SUBA?     ( --- flag )    41 ?A? ;
+: SUBX?     ( --- flag )    44 ?XBCD? ;
+: SUB?      ( --- flag )    40 MNEM.O SIZE.O ARL.OP ;
+
+3 UVEC LINE9  ' SUBA? ,  ' SUBX? ,  ' SUB? ,
+
+
+\ 68000 Disassembler: LINE A, B                     DUZ 04/06/89
+
+0 CONSTANT LINEA   ( always false )
+
+: CMPM?     ( --- flag )
+            8 BIT  MOD1 1 =  AND
+            IF  16 MNEM.O SIZE.O  REG1 3 REG2 3 SRC&DST
+            ELSE  0  THEN ;
+
+: CMPA?     ( --- flag )    14 ?A? ;
+
+: CMP|EOR?  ( --- flag )
+            8 BIT IF 19 ELSE 13 THEN MNEM.O SIZE.O ARL.OP ;
+
+3 UVEC LINEB  ' CMPA? ,  ' CMPM? ,  ' CMP|EOR? ,
+
+
+\ 68000 Disassembler: LINE C                        DUZ 04/06/89
+
+: EXG?      ( --- flag )
+            9 4 OPCB  14 =
+            IF  1B MNEM.O  REG2 MOD1  REG1 MOD1  SRC&DST
+            ELSE  9 3 OPCB  31 =
+                IF  1B MNEM.O  REG2 0  REG1 1  SRC&DST
+                ELSE  0  THEN
+            THEN ;
+
+: ABCD?     ( --- flag )    0 ?XBCD? ;
+: MUL?      ( --- flag )    2C ?MD? ;
+: AND?      ( --- flag )    6 MNEM.O SIZE.O ARL.OP ;
+
+4 UVEC LINEC  ' EXG? ,  ' ABCD? ,  ' MUL? ,  ' AND? ,
+
+
+\ 68000 Disassembler: LINE D, F                     DUZ 04/06/89
+
+: ADDA?     ( --- flag )    2 ?A? ;
+: ADDX?     ( --- flag )    5 ?XBCD? ;
+: ADD?      ( --- flag )    1 MNEM.O SIZE.O ARL.OP ;
+
+3 UVEC LINED  ' ADDA? ,  ' ADDX? ,  ' ADD? ,
+
+0 CONSTANT LINEF
+
+
+\ 68000 Disassembler: LINE E                        DUZ 04/06/89
+
+TABLE WHICH.SHIFT    9 , 23 , 39 , 37 ,  8 , 22 , 38 , 36 ,
+                  ( ASR  LSR  ROXR ROR  ASL  LSL  ROXL ROL )
+
+: LINEE     ( --- flag )
+            SIZE 3 =
+            IF  0B 9  ELSE  5 3  THEN  OPCB
+            8 BIT CELLS +  WHICH.SHIFT MNEM.O
+            SIZE 3 =
+            IF  .W 1ST.EA
+            ELSE  SIZE.O  5 BIT
+                IF  REG2 0 REG1 0 SRC&DST
+                ELSE  INH#.O  ,.O REG1 D.O
+                THEN
+            THEN ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+VECTOR DECODE   ( --- flag )
+        ' LINE0 ,  ' LINE1 ,  ' LINE2 ,  ' LINE3 ,
+        ' LINE4 ,  ' LINE5 ,  ' LINE6 ,  ' LINE7 ,
+        ' LINE8 ,  ' LINE9 ,  ' LINEA ,  ' LINEB ,
+        ' LINEC ,  ' LINED ,  ' LINEE ,  ' LINEF ,
+
+: DC.W      ( --- ; handle unrecognized opcodes )
+            CLR.O S" DC.W" APPEND.O OP.TAB.O
+            $ @ $' !  @W <# W#S +> APPEND.O ;
+
+: DIS1      ( --- flag )
+            CLR.O ADVANCE @W OPC !  SIZE (SIZE) !
+            LINE DECODE  0= IF  DC.W  THEN  SHOW.DIS ;
+
+
+\ 68000 Disassembler                                DUZ 04/06/89
+
+FORTH DEFINITIONS
+
+: DIS       ( addr --- ; disassemble from addr on )
+[ C" F68kAns" FIND NIP ] [IF] code>data [THEN] 
+			$' !
+            BEGIN
+                DIS1 ( ?STACK) KEY DUP [CHAR] / = SWAP 1B = OR
+            UNTIL ;
+
+: RANGE.DIS ( from to --- )
+            SWAP $' ! BEGIN  DIS1  DUP $' @ <  UNTIL  DROP ;
+
+
+: DIS:  ' DIS ;
+
+ONLY FORTH-WORDLIST FORTH-WORDLIST 2 SET-ORDER  FORTH DEFINITIONS
+DECIMAL

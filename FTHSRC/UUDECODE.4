@@ -1,0 +1,159 @@
+\ uudecode  V1.1             A Forth version of the Unix utility
+\ @(#)uudecode.seq      1.1 21:55:29 11/15/94   EFC
+
+\ Typical usage:
+\    s" file.uu" uudecode
+
+\ This program ignores the file mode number that follows the word begin.
+
+\ This is an ANS Forth program requiring:
+\      1. The File word set
+\      2. The word COMPARE in the String word set.
+
+\ (c) Copyright 1994 Everett F. Carter.  Permission is granted by the
+\ author to use this software for any application provided this
+\ copyright notice is preserved.
+
+ 
+DECIMAL
+ 
+\ buffers and I/O handles
+
+\ inbuf0 includes count, inbuf starts after count
+CREATE inbuf0  82  ALLOT    inbuf0 1+ CONSTANT inbuf
+CREATE outbuf  82  ALLOT
+ 
+VARIABLE obp   0 obp !
+-1 VALUE in-handle
+-1 VALUE out-handle
+ 
+ 
+\    write, putb
+ 
+: write ( n -- )            \ write n bytes out out-handle
+        outbuf SWAP out-handle WRITE-FILE
+        ABORT" write error "
+;
+ 
+: putb ( b -- )              \ put a byte to the output buffer
+       outbuf obp @ + C!     \ write if its nearly full
+       obp @ 1+ DUP OBP !
+       DUP 74 > IF write  0 obp ! ELSE DROP THEN
+;
+
+: flushb ( -- )
+       obp @ DUP 0 > IF write 0 obp ! ELSE DROP THEN
+;
+ 
+\  readln
+\ read n bytes or to EOL from in-handle
+\ return a zero if an error,  result goes to inbuf
+\ strip off any trailing CR/LF
+
+HEX
+ 
+: readln ( n -- 0->err/n->ok )   \ read n bytes or to EOL
+     0 inbuf0 C!
+     inbuf SWAP in-handle READ-LINE
+     0= IF DROP
+           inbuf0 C!
+        THEN
+     
+     \ replace any CR or LF with SPACE
+     inbuf0 C@ 0 ?DO inbuf I + C@ DUP 10 = SWAP 13 = OR
+                     IF 32 inbuf I + c! THEN
+       LOOP
+       inbuf0 C@
+
+       ;
+ 
+ 
+\    dec, outdec
+ 
+: dec ( c -- c )     \ single character decode
+      20 - 3F AND ;
+
+DECIMAL
+ 
+: outdec ( bp n -- )    \ output group of 3 bytes from bp
+     OVER DUP C@ DEC 4 * SWAP 1+ C@ DEC 16 / OR putb
+     DUP 1 > IF
+             OVER 1+ DUP C@ dec 16 * SWAP 1+ C@ dec 4 / OR putb
+             THEN
+     2 > IF
+         2+ DUP C@ dec 64 * SWAP 1+ C@ dec OR putb
+         ELSE DROP THEN   ;
+
+\   out-loop
+ 
+ : out-loop  ( n -- )        \ output until n is zero
+        DUP 0 > IF
+              inbuf 1+ SWAP BEGIN
+                         OVER OVER  outdec
+                         3 - SWAP 4 + SWAP
+                         DUP 0 <=
+              UNTIL DROP
+         THEN DROP
+ 
+;
+ 
+ 
+\  Find the header line
+ 
+: find_head ( -- )
+
+        BEGIN
+         80 readln ?DUP 0= ABORT" no begin line"
+         inbuf0 C!
+         s" begin" inbuf0 COUNT 5 MIN COMPARE 0=
+        UNTIL
+
+;
+ 
+\ Parse the header line
+ 
+: $<<    ( $addr n -- )     \ shift string by indicated amount
+           OVER 1+ OVER OVER OVER
+           + ROT ROT OVER 1- C@ SWAP - MOVE
+           OVER C@ SWAP - SWAP C! ;
+ 
+: parse_head
+       \ remove trailing SPACES
+        inbuf0 COUNT -trailing inbuf0 C! DROP
+        inbuf0 6 $<<    \ next 3 chars are octal number
+ 
+        inbuf0 4 $<<    \ now inbuf is the output file name
+;
+
+\ ====== everything above here could be made private =========================
+ 
+: uudecode ( $addr count -- )
+
+      R/O OPEN-FILE ABORT" Unable to open file to decode "
+      TO in-handle
+
+      find_head parse_head
+      inbuf0 COUNT W/O BIN CREATE-FILE ABORT" Unable to open destination file "
+      TO out-handle
+
+      BEGIN 0 80 readln
+            DUP IF 2DROP inbuf C@ dec DUP 0 > THEN
+         WHILE out-loop
+      REPEAT DROP
+
+      flushb
+
+      in-handle  CLOSE-FILE DROP
+      out-handle CLOSE-FILE DROP
+
+;
+
+
+
+
+
+
+
+
+
+

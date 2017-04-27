@@ -1,0 +1,123 @@
+( TOOLKIT  & TOOLKIT EXTENSIONS )
+( JPS, 12apr93 )
+
+
+( JPS940813: [IF] [ELSE] [THEN] added )
+
+: ? ( addr -- )										( TOOLKIT )
+	@ . ;
+
+
+
+: .S ( -- )											( TOOLKIT )
+	DEPTH 0 ?DO s0 @ I 1+ CELLS - @ LOOP
+    ." ToS: " DEPTH 2 / 0 ?DO . LOOP ;
+    
+
+
+GET-CURRENT hidden-wordlist SET-CURRENT
+
+: ?TERMINAL     ( -- CHAR / FALSE )
+        KEY? IF KEY ELSE 0 THEN ;
+
+: DUMPLINE      ( ADR -- )
+        BASE @ >R  HEX
+        DUP [ DECIMAL ] 8 .R ." : "
+        16 0 DO
+			DUP I + C@ 2 .R SPACE
+        LOOP
+        SPACE 16 0 
+		DO
+			DUP I + C@ DUP BL < 0= 
+			IF  EMIT  ELSE  DROP ." ."  THEN
+        LOOP  
+		DROP R> BASE ! ;
+
+
+
+: FIRSTLINE ( -- )
+        CR ."  ADDRESS: "
+        BASE @ >R HEX
+        [ DECIMAL ] 16 0 DO I 2 .R SPACE LOOP SPACE
+        16 0 DO I 1 .R LOOP
+        R> BASE ! CR
+        75 0 DO [CHAR] - EMIT LOOP CR ;
+
+: STOP? ( -- FLAG )
+        ?TERMINAL DUP IF
+                [ HEX ]  1B = IF -1 EXIT THEN
+                KEY  1B =
+        THEN ;
+
+
+SET-CURRENT
+
+( DUMP, WORDS )
+
+: DUMP  ( ADR COUNT -- )				   			( TOOLKIT )
+        FIRSTLINE
+        [ DECIMAL ] 16 / 1+ 0 
+        ?DO
+                DUP I 16 * + DUMPLINE
+                STOP? IF CR CR LEAVE THEN CR
+        LOOP DROP ;
+
+
+: TYPE16 ( ADDR LEN -- )
+    BEGIN out @ [ HEX ] F AND WHILE SPACE REPEAT TYPE ;
+
+
+: context ( -- voc-addr )
+	vocpa @ DUP @ + @ ; 
+
+: WORDS ( -- )   									( TOOLKIT )
+	0 >R 	( counter ) 
+	context @  ( lfa )
+	BEGIN DUP WHILE
+		R> 1+ >R
+		?16CR  DUP CELL+ COUNT TYPE16
+		@ STOP?
+	UNTIL THEN  DROP  CR 
+	R> . ." words displayed" CR ;
+       
+
+: SEE ." SEE not implemented" ABORT ;
+
+
+
+\ MARKER [IF][ELSE][THEN]
+\ : WORD ." word:" WORD DUP COUNT TYPE CR ;
+
+
+: [ELSE] ( -- )							( TOOLKIT )
+	1 BEGIN									\ LEVEL
+	  BEGIN  
+	    blankbits ( **) WORD COUNT  DUP 
+	  WHILE 								\ LEVEL ADR LEN
+	    2DUP S" [IF]" COMPARE 0= IF			\ LEVEL ADR LEN
+	      2DROP 1+							\ LEVEL'
+	    ELSE								\ LEVEL ADR LEN
+	      2DUP S" [ELSE]" COMPARE 0= IF		\ LEVEL ADR LEN
+	        2DROP 1- DUP IF 1+ THEN			\ LEVEL'
+	      ELSE								\ LEVEL ADR LEN
+	        S" [THEN]" COMPARE 0= IF		\ LEVEL
+	          1-							\ LEVEL'
+	        THEN
+	      THEN
+            THEN ?DUP 0=  IF EXIT THEN		\ LEVEL'
+	  REPEAT 2DROP							\ LEVEL
+	REFILL 0= UNTIL 						\ LEVEL
+	DROP ; IMMEDIATE 
+
+: [IF] ( flag -- )						( TOOLKIT )
+	0= IF POSTPONE [ELSE] THEN ; IMMEDIATE
+
+: [THEN]  ( -- )  ; IMMEDIATE					( TOOLKIT )
+
+
+
+
+S" TOOLS" 				TRUE 	1 SET-ENVIRONMENT
+S" TOOLS-EXT"			TRUE 	1 SET-ENVIRONMENT
+
+

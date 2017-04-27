@@ -1,0 +1,235 @@
+From willett!dwp@vax.cs.pitt.edu Wed Jan 26 02:43:08 1994
+Return-Path: <willett!dwp@vax.cs.pitt.edu>
+Received: from vax.cs.pitt.edu by ks.mpi-dortmund.mpg.de (4.1/SMI-4.1MHS-mpi-1.4.93)
+	id AA13404; Wed, 26 Jan 94 02:42:51 +0100
+Received: from willett.UUCP by vax.cs.pitt.edu (5.65/1.14)
+	id AA16578; Tue, 25 Jan 94 20:30:25 -0500
+Date: Tue, 25 Jan 94 06:53:28 EDT
+From: dwp@willett.pgh.pa.us (Doug Philips)
+Subject: Part 1 of 1 of SVAR.TXT
+Message-Id: <9401250653.0.UUL1.3#5129@willett.pgh.pa.us>
+To: plewe@mpi-dortmund.mpg.de
+Content-Length: 8666
+X-Lines: 219
+Status: RO
+
+Here is code that implements stack variables, in Standard
+Forth.  The point of stack variables is that they act exactly
+like variables unless you use special commands, but when you
+use those commands then a stack variable simulates an extra
+stack using a linked list.  This allows easy recursion with
+variables -- you set up new values when you recurse, and call
+the old values back when you return.  It allows as many extra
+stacks as you like, but they don't work as fast as real stacks
+and they use twice as much memory.  On the other hand they all
+share the same space, so none of these simulates stacks will
+overflow until they all do.  There's no concern about how deep
+to make each one.
+
+If you need a linked list instead of a simulated stack, you've
+got it.  The code could be easily generalized for other sizes
+of data, but different data-sizes can't be mixed.
+
+The useful commands:
+
+SVARIABLE makes a new stack variable.
+V-NEW ( aa -- ) saves the current data and pointer to backup,
+        sets the pointer to the new backup.
+V-OLD ( aa -- ) restores the data and pointer to the
+        previous values.
+V-PUSH ( x aa -- ) does V-NEW and puts the top stack item into the
+        data-address.
+V-POP ( aa -- x ) copies the current data onto the
+        stack and does V-OLD .
+V-PICK ( n aa -- x ) returns the nth saved data item.
+.SV ( aa -- ) prints out the list of saved data.
+VOID ( svar -- ) discards the backup data-items, leaving the
+        original data (not the current data).
+VOID-ALL voids all the stack variables.
+
+A pair of hard-to-use subtle commands:
+
+SACTION is a stack variable designed to hold execution tokens.
+        Each of them should expect some sort of data with the
+        data-address of a stack variable or backup-item on top,
+        and it should return some sort of data with a flag on
+        top. The flag will be used to indicate whether SSEARCH
+        should continue.
+        ( j* svariable-link -- j*' f )
+
+SSEARCH ( i* svar -- j* f ) takes data with a stack variable
+        or backup-item data-address on top, and returns some
+        other data with a flag.  If the flag is false, then
+        the execution token in SACTION was used on every
+        backup item for the stack variable, and never returned
+        true.  If the flag is true, then the action once
+        returned true and no further items were checked.
+
+Various internals:
+
+>THREAD ( aa1 -- aa2 ) goes from the data address returned by a
+        stack variable to the pointer to the old
+        values.
+THREAD> ( aa2 -- aa1 ) goes from the pointer to the data
+        address.
+PREVIOUS-SV> ( aa1 -- aa3 ) goes from the data address to the
+        pointer to another stack variable.
+LAST-SVARIABLE points to a linked list of all the stack
+        variables.
+POOL is a constant that says how many backup items are
+        available for stack variables
+FREELIST points to the first unused backup item.
+CELLSLINK initializes the backup items' pointers into a linked
+        list.
+ONLY-V? ( aa -- f ) says whether there is any previous data.
+
+{
+
+VARIABLE LAST-SVARIABLE
+LAST-SVARIABLE OFF
+: SVARIABLE   CREATE   0 , 0 , HERE LAST-SVARIABLE DUP @ , ! ;
+256 CONSTANT POOL
+CREATE FREELIST POOL 2* 1+ CELLS ALLOT
+: CELLSLINK
+     FREELIST POOL 0 DO
+        0 OVER CELL+ !
+        DUP 2 CELLS + DUP ROT ! LOOP
+     OFF ; CELLSLINK
+: >THREAD CELL+ ;
+: THREAD> 1 CELLS - ;
+: PREVIOUS-SV> 2 CELLS - ;
+
+
+
+: V-NEW  ( aa -- ) FREELIST @
+( aa 1st-free )    DUP 0= ABORT" Out of stack-variable space"
+( aa 1st-free )    DUP @ FREELIST !
+( aa free )        2DUP THREAD> 2 CELLS MOVE
+( aa free )        SWAP >THREAD ! ;
+
+: V-OLD ( aa -- )         DUP >THREAD @ DUP IF
+( sv old-link )           DUP THREAD> ROT
+( old-link old-value sv ) 2 CELLS MOVE
+( )                       FREELIST @ OVER ! FREELIST ! ELSE
+( sv old-link )           2DROP THEN ;
+
+: V-PUSH ( x aa -- ) DUP V-NEW ! ;
+: V-POP ( aa -- x ) DUP @ SWAP V-OLD ;
+
+
+: V-PICK ( n aa -- x ) >THREAD SWAP ?DUP IF 0 DO @ LOOP
+    THEN THREAD> @ ;
+: ONLY-V? ( aa -- f ) >THREAD @ 0= 0= ;
+: .SV ( svar -- ) CR >THREAD BEGIN DUP THREAD>
+    @ U. @ ?DUP 0= UNTIL ;
+
+
+SVARIABLE SACTION  ( SACTION will provide a flag )
+( j* svariable-link -- j*' f )
+: SSEARCH ( i* svar -- j* f )
+             >R BEGIN
+( j* )       R@ @ SACTION @ EXECUTE
+( j* f )     R> OVER 0= WHILE
+( j* f wida) >THREAD @ DUP WHILE THREAD> >R DROP REPEAT THEN
+( j* f wida) DROP ;
+
+: VOID ( svar -- ) BEGIN DUP >THREAD @ WHILE DUP V-OLD REPEAT
+     DROP ;
+: VOID-ALL   LAST-SVARIABLE @
+    BEGIN DUP WHILE DUP PREVIOUS-SV> VOID  @ REPEAT  DROP ;
+}
+
+So far as I can tell, this code is 100% Standard with no
+environmental dependencies.  Any system which has enough free
+memory to load it, should give identical results over the minimum
+required range of numbers with one exception:  The U. command in .SV
+is not guaranteed to work with negative numbers (but will on all
+reasonable systems).
+
+Example:
+
+SVARIABLE TEST
+5 TEST !
+12 TEST V-PUSH
+TEST @ .  ( returns 12 ok )
+TEST V-OLD
+TEST @ .  ( returns 5 ok )
+
+Something about how it works:
+
+Each stack variable has 3 cell-size fields.
+The first one holds the current data for this variable.
+The second holds a pointer to a linked list, one that holds all
+        the stacked data for this variable.
+The third one holds a pointer for a linked list whose first
+        element is in LAST-SVARIABLE.  You can use this linked
+        list to keep track of all the stack variables.
+
+For my convenience I put all the storage space in a single
+area, after FREELIST .  CELLSLINK initializes the linkage.
+FREELIST itself holds the pointer to the first free element.
+Then each pair of cells has a cell for data followed by a
+pointer to the next in line.  None of the other commands
+depends in any way on this arrangement.  You could link in
+pairs of cells anywhere in read-write space that won't be used
+for anything else, and they'll work.  But if you try to do
+something fancy that fails, that unlinks data from a stack
+variable and doesn't link it into the unused list, it will stay
+lost until you get it back.  The way I did it, you get it all
+back with CELLSLINK.  But you also need to zero out all the
+stack-variable pointers.  Of course, a fancy mistake could
+corrupt any data in memory, since there's no telling where the
+pointers might have pointed.  It might be better to start over
+from scratch.  But if you restrict yourself to the easy
+commands, you can't do too much damage.
+
+If you try to do V-OLD on a stack variable that has no saved
+values, nothing will happen.  This is harmless, although there
+may be some unrelated problem if your program thinks it needs
+to pop a simulated stack an extra time, when it doesn't.  You
+can do ONLY-V? to find out whether there are saved values.
+
+If you try to do V-NEW when there are no free elements, it
+aborts with a message.  This makes it hard to completely
+replace V-NEW with fast assembly code.  If you need speed and
+you're sure your stacks won't overflow, you can remove that
+behavior.  At any time you can estimate the high-water mark by
+seeing where the highest non-zero data element is among the
+currently-unused ones with FREELIST 1 CELLS - .SV .  It's
+possible but not likely that your program might store and
+restore zeroes in the same order, to fool you.
+
+
+If you want to write your own fancy commands to manipulate
+these linked lists, it helps to use >THREAD and THREAD> and
+perhaps PREVIOUS-SV> .  Then if you later rearrange the
+structure of the fields you won't have to rewrite your new
+commands as much.
+
+SSEARCH allows very fancy manipulation.  You put the execution
+token for some action into SACTION, and give SSEARCH a stack
+variable.  SSEARCH will do the action on each succesive
+data-item, back through the list.  The action returns a flag.
+If it returns a true flag then SSEARCH quits.  So, for example,
+.SV could be written as:
+
+: U.0 U. 0 ;
+: .SV ['] U.0 SACTION V-PUSH ." top " SSEARCH
+     DROP SACTION V-OLD ;
+
+Each time, the action is to print out the number and leave the
+flag that says to keep going.  At the end we get rid of the 0
+flag.  We use V-PUSH so that .SV could be called inside of some
+other SSEARCH command.
+
+I find that sometimes SSEARCH saves me time and detail work,
+but it isn't as easy to use as I'd like.  Something about the
+syntax doesn't make it obvious exactly what's needed.  It's
+possible to make it do really complicated Rube-Goldberg things
+with it, that look simple but that take discipline to debug.
+And while the code is short, it may be less efficient and
+harder to read than just grinding out the result.  I'm cautious
+about it.  Maybe someone will find a syntax that makes it all
+more obvious.
+
+

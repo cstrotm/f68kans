@@ -1,0 +1,124 @@
+\
+\ the REVOC utility is used to move words from one
+\ wordlist to another. 
+\
+\ This may be useful when removing words, which are not 
+\ intended to be used by the programmer, from the standard 
+\ FORTH-WORDLIST to another, which will not be searched. 
+\
+
+GET-CURRENT hidden-wordlist SET-CURRENT
+
+
+\ ------------------------------------------------------------------
+
+
+
+: xt>prevhead ( voc xt -- previoushead | 0)
+	>R  @ 
+	BEGIN 
+		DUP @ 1 CELLS - @ R@ <>
+	WHILE
+		@ DUP @ 0= 
+	UNTIL THEN
+	R> DROP 
+	;
+
+
+: >prevhead ( xt -- prevhead | 0 )
+	vocpa @ @ 0 
+	DO
+		vocpa @ I CELL+ + @ OVER
+		xt>prevhead ?DUP IF NIP UNLOOP EXIT THEN 
+	1 CELLS +LOOP ( xt )	
+	DROP FALSE ;
+	
+
+: unlink_header ( previoushead -- head ) 
+	DUP @ DUP >R  ( get link to head and save as result )  
+	@ 			  ( get link from head to next )
+	SWAP ! 		  ( establish new link )
+	R> ;
+
+: append_header ( header voc -- ) 
+	2DUP
+	@ SWAP ! 		\ build the link-chain
+	!				\ update the vocabulary
+	;
+
+
+: REVOC ( xt voc -- ) 
+	SWAP >prevhead 
+	unlink_header
+	SWAP append_header
+	;
+
+\ WORDLIST CONSTANT HIDDEN
+\ ' NEW HIDDEN REVOC
+
+
+\ ---------------------------------------------------------------
+\ 
+\ may be useful:
+\
+\ : revoc-words ( c-addr -- )
+\	>R
+\	context @  ( lfa )
+\   BEGIN DUP WHILE
+\        CR ." ' " 
+\		DUP CELL+ COUNT TYPE SPACE
+\		R@ COUNT TYPE16 ."  REVOC"   
+\        @ STOP? 
+\    UNTIL THEN  DROP  CR
+\	R> DROP ;
+
+
+VARIABLE towordlist
+: revoc-words ( c-addr -- )
+	towordlist !  0 >R
+	context @  ( lfa )
+    BEGIN DUP WHILE
+		R> 1+ >R
+		DUP 
+        @ 
+    REPEAT  DROP
+	R> 0 DO
+        CR ." ' " 
+		CELL+ COUNT TYPE SPACE
+		towordlist @ COUNT TYPE16 ."  REVOC"   
+	LOOP
+	CR ;
+              
+\ e.g.:    C" hidden-wordlist" revoc-words
+
+
+SET-CURRENT ( restore )
+
+
+\ ---------------------------------------------------------------
+		 
+FALSE [IF]
+
+\ sucht in voc nach einem Wort mit dem 
+\ passenden xt und liefert die Adresse des Namens im Header 
+: xt>name ( voc xt -- c-addr | 0)
+	>R  @ 
+	BEGIN 
+		DUP 1 CELLS - @ R@ <>
+	WHILE
+		@ DUP 0= 
+	UNTIL THEN
+	R> DROP 
+	DUP IF CELL+ THEN 
+	;
+
+: >NAME ( xt -- c-addr | 0 )
+	vocpa @ @ 0 
+	DO
+		vocpa @ I CELL+ + @ OVER
+		xt>name ?DUP IF NIP UNLOOP EXIT THEN 
+	1 CELLS +LOOP ( xt )	
+	DROP FALSE ;
+	
+[THEN]
+

@@ -1,0 +1,15 @@
+\
+\ Implementation von WITHIN
+\ entnommen aus dpANS6
+\
+
+\ : WITHIN ( test low high -- flag )		( CORE EXT)
+\	>R OVER < 0= ( test flag ) 
+\	SWAP R> < AND ;
+
+
+\ speziell fuer 2er-Komplement geht besser
+
+: WITHIN ( test low high -- flag )		( CORE EXT)
+	OVER - >R - R> U< ;
+

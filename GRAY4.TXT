@@ -1,0 +1,29 @@
+                     Anton Ertl's GRAY4 for F68KANS
+
+I have added the port of GRAY4 for F68KANS to my distribution.
+You may ask, why there has to be a port, because F68KANS is a
+ANSI standard Forth system and GRAY4 claims to be ANSI source.
+
+Well, GRAY4 is not really ANSI, because it expects a Forth system
+not to be case-sensitive. But F68KANS *is* case-sensitive! 
+So Anton's sources had to be converted. This was managed with a nice
+tool from Ullrich Hoffman, which you can find in my ANSLIB 
+directory.
+
+Beside this difficulty, there was a second (if you do not count the bugs
+I found in F68KANS with the help of GRAY4): be sure that your returnstack
+is big enough!! My initial value of 2kB was not large enough, so I turned
+it to 10kB. Think of the fact, that also the file words like INCLUDED
+are using the returnstack! 
+(My effect was quite silly: when I typed the content of the file TEST.FS
+to my input window, all was fine. When I INCLUDED it, it crashed. It took
+me one complete evening to find out the reason!)
+
+The GRAY4 test in TEST.FS needs a lot of dictionary, too. Make sure that
+you have about 100kB free for it.
+
+Have fun,
+
+- Joerg
+
+ 

@@ -1,0 +1,72 @@
+This is Realease 4 of Gray, a parser generator written in Forth. It
+takes grammars in an extended BNF syntax and generates recursive
+descent parsers as executable Forth code.
+
+
+FILES
+
+README		You are reading it
+CHANGES		describes differences to earlier releases
+gray.fs		parser generator source file
+gray.doc	parser generator manual
+else.fs		a very tiny example grammar
+oberon.fs	a medium-sized example grammar
+calc.fs		an example interpreter
+mini.fs		an example compiler
+test.mini	a program for mini (computes the square)
+graylist.fs	example extension for Gray
+graycond.fs	semantic parsing conditions, another extension
+test.fs		runs the examples
+test.out	output of test.fs on one system
+
+
+PORTING AND TESTING
+
+As far as I know, the current version is ANS Forth conformant, with
+environmental dependences on case-insensitivity, stacks that are big
+enough (in particular, it needs a lot of return stack, e.g. 360 cells
+for oberon.fs), , and that 1 CHARS equals 1. It requires words from the
+CORE EXT and TOOLS EXT wordsets. A standard system is still standard
+after loading Gray. Gray has been tested with pfe-0.9.6 and an
+unreleased ANS Forth implementation.
+
+Some of the test programs require more wordsets; in particular,
+mini.fs needs at least the FILE and SEARCH wordsets. Also, some test
+programs define standard names in nonstandard ways, so a system is not
+standard after loading them.
+
+As distributed, Grays uses a space-hungry, but ANS conformant way of
+remembering source code locations for later error messages (thanks to
+Marcel Hendrix for that). Most systems will have words for accessing
+the current source file name and line number. If you want to save
+space, replace the stuff in gray.fs marked with `!!' with code for
+accessing and printing your source location.
+
+You can test Gray by loading test.fs. This needs more than 100KB on a
+32-bit Forth with the present source location storage method (much
+less if you reduce the amount space for storing source location
+information). The output should look similar to test.out (test.out was
+created with pfe).
+
+AKNOWLEDGEMENTS
+
+Thanks to Marcel Hendrix for his ANS conformant error location code.
+
+
+COPYRIGHT
+
+Copyright 1990, 1991, 1994 Martin Anton Ertl
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
