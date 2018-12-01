@@ -1,0 +1,1 @@
+CC = gccloader: loader.r bios.r	cc -fd=loader loader.r bios.rbios.r: bios.a	r68 -o=bios.r bios.a
