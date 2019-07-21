@@ -1,4 +1,4 @@
-                     Anton Ertl's GRAY4 for F68KANS
+#+Title: Anton Ertl's GRAY4 for F68KANS
 
 I have added the port of GRAY4 for F68KANS to my distribution.
 You may ask, why there has to be a port, because F68KANS is a
@@ -15,6 +15,7 @@ I found in F68KANS with the help of GRAY4): be sure that your returnstack
 is big enough!! My initial value of 2kB was not large enough, so I turned
 it to 10kB. Think of the fact, that also the file words like INCLUDED
 are using the returnstack! 
+
 (My effect was quite silly: when I typed the content of the file TEST.FS
 to my input window, all was fine. When I INCLUDED it, it crashed. It took
 me one complete evening to find out the reason!)
