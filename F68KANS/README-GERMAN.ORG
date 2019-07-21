@@ -1,0 +1,116 @@
+#+Title: F68KANS - ein Forthsystem für 680x0-Computer
+
+
+*experimentelle Ausgabe*
+
+* Wichtiger Hinweis:
+
+Bei F68KANS handelt es sich um ein Low-Cost-Produkt, das von
+versierten Entwicklern in Gemeinschaftarbeit erstellt wurde. Dabei
+wurde versucht, vor allem eine möglichst grosse Betriebsicherheit
+und Zuverlässigkeit zu erzielen. Sie als Anwender und Programmierer
+können sicher sein, trotz Low-Cost High-Tech zu bekommen.
+
+Trotzdem: F68KANS ist in der Form, wie es vor Ihnen liegt, kein
+professionelles Produkt (im Sinne des Wortes, nicht im meist benutzten
+Sinne). Professionelle Produkte können (und sind auch manchmal)
+besser gepflegt und ausgereifter, besser dokumentiert und
+unterstützt sein. Professionelle Produkte dienen der Freude der
+Anwender, F68KANS der Freude seiner Entwickler.  Wenn Sie also etwas
+vermissen sollten, schieben Sie es nicht auf die Sprache Forth,
+sondern auf deren Implementation. Wenn Ihnen Support, eine
+durchgängige Linie und garantierte Beständigkeit wichtiger sind
+als niedriger Preis und eine paar freakige Features, sollten Sie sich
+an die Profis wenden, die auch hier in Deutschland vertreten sind.
+Ich will hier keine Werbung für bestimmte Unternehmen machen, aber
+wenn Sie mich kontaktieren, werde ich Ihnen mit den nötigen
+Verbindungen aushelfen.
+
+* Um was geht's?
+
+F68KANS ist ein zwischen 680x0-Rechnern binär portierbares
+Forthsystem der modernen Art.
+
+Diese experimentelle Ausgabe für Systementwickler enthält nur
+die Anbindung an die Rechner der Atari-Reihe, auf denen das System
+entstanden ist. Die Systemanbindung ist sehr weitreichend und
+weitgehend, aber wahrscheinlich nicht vollständig, auf andere
+Maschinen übertragbar. Damit ergibt sich das Problem, daß sich
+die Quelltexte nicht einfach nach ihrer Portierbarkeit einordnen
+lassen, da viele manchmal portierbar sind, und manchmal eben
+nicht. Die beschriebene Installation ergibt ein auf Atari-Rechnern
+lauffähiges und generierbares System, die für weitere
+Implementationen als Modell dienen sollen.
+
+* Installation:
+
+Kopieren Sie einfach das Verzeichnis F68KANS an eine beliebige Stelle in Ihren 
+Dateibaum oder lassen Sie einfach alles auf der Diskette.
+
+ * Was haben Sie bekommen?
+ * Was sollten Sie haben?
+
+Dieser Absatz beschäftigt sich mit dem Lieferumfang und was wozu da ist. Im 
+Basisverzeichnis F68KANS befinden sich nur wenige Dateien und einige weitere 
+Verzeichnisse, die hier erläutert werden sollen. In den jeweiligen Verzeichnissen 
+befinden sich wiederum Dateien mit dem Namen README.TXT, die dann eine 
+detailiertere Beschreibung enthalten.
+
+Ich empfehle ausdrücklich, eigene Quelltexte NICHT im Verzeichnis F68KANS 
+unterzubringen, damit sich dieses Verzeichnis mit einem neuen Systemrelease einfach 
+auswechseln läßt. Diese Aussicht sollten Sie auch im Hinterkopf haben, wenn Sie 
+erwägen, Worte des Systems, die nicht dem Standard oder den ausgewiesen 
+systemabhängigen Teilen zugehören, in eigenen Applikationen zu benutzen.
+DIESE WORTE SIND IM NÄCHSTEN RELEASE VIELLEICHT NICHT MEHR DABEI!
+
+
+
+* Dateien in F68KANS:
+
+ * =README-GERMAN.ORG= - Hallo, ich bin's!
+ * =F68KANS.IMG= - Dies ist ein Systemimage. Es enthält das
+   eigentliche Forthsystem in binärer Form. Meist ist es aus
+   praktischen Gründen dort abgelegt, wo das System zum letzten mal
+   generiert wurde, z.B. unter ATARI. Trotzdem ist diese Datei immer
+   vollständig systemunabhängig!
+
+* Verzeichnisse in F68KANS:
+
+ * =KERNEL= - Dieses Verzeichnis enthält alle Assemblerquelltexte, die
+   zur Generierung eines Basisimagefile notwendig sind. Die bereits
+   erwähnte Datei f68kans.img ist daraus erstellt worden. Die
+   Generierung kann systemabhängige Schritte enthalten!!  
+
+ * =SYSFTH= - Hierin sind all die Forthquelltexte enthalten, die
+   notwendig sind, um aus dem assemblergenerierten Kernelteil einen
+   vollständigen ANSI-Kernel zu erstellen. Es läßt sich nicht
+   vermeiden, daß innerhalb dieser Definitionen auch Nicht-ANSI-Worte
+   erzeugt werden. Diese dürfen aber unter KEINEN UMSTÄNDEN in eigenen
+   Forth-Programmen benutzt werden, da dies unmittelbar dazu führt,
+   daß das Programm nicht mehr standardkonform ist. Vorsicht: einige
+   der Quelltexte können systemabhängig sein. Da es ich um
+   Systemquellen handelt, bedeutet das, daß solche Quellen bei einer
+   SYSTEMPORTIERUNG bearbeitet werden müssen. Der Anwender portiert in
+   der Regel aber nicht das System, sondern eine Anwendung auf ein
+   anderes System.
+
+ * =APPFTH= - Hier stehen all die Quelltexte, die auf dem ANSI-Kernel,
+   der aus den Verzeichnissen KERNEL und SYSFTH hervorgeht, basieren
+   und noch dem System bzw. der Entwicklungsumgebung zuzuordnen sind
+   (z.B. Anbindung von Grafikfunktionen). Diese Quellen sind natürlich
+   z.T. systemabhängig. Hier hat der Programmierer zu entscheiden, ob
+   er systemabhängige Worte in seiner Applikation benutzen möchte, da
+   diese ebenfalls systemabhängig ist. Die nicht systemabhängigen
+   Definitionen basieren direkt auf dem Standard und sollten deshalb
+   bei einer Portierung auch auf anderen ANSI-Kerneln benutzbar sein.
+
+ * =TST= - Diese Quelltexte dienen dem Test von Forthworten des
+   Systems (und nicht Ihrer Anwendung!). Damit sind sie auch schön als
+   Anwendungsbeispiele oder Demos einzusetzen.
+
+ * =ATARI= - enthält die Programme, die für die Rechner der
+   Atari-Reihe spezifisch sind. Dies ist in erster Linie natürlich der
+   Systemlader mit seinen Vorrichtungen zur Anbindung des Forthsystems
+   an das Betriebsystem. Außerdem sind hier Generierungshilfen wie
+   z.B. Projektbeschreibungsfiles oder Dateifilter abgelegt.
+
